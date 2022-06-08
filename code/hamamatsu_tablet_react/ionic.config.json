@@ -1,0 +1,7 @@
+{
+  "name": "Hamamatsu",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react"
+}
