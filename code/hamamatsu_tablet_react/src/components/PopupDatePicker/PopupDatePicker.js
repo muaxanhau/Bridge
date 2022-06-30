@@ -18,7 +18,17 @@ const PopupDatePicker = ({
 
   // effects
   useEffect(() => {
-    onChangeDate(selectedDate)
+    const day = new Date(selectedDate)
+
+    const yyyy = day.getFullYear()
+    let mm = day.getMonth() + 1
+    let dd = day.getDate()
+
+    mm = mm < 10 ? `0${mm.toString()}` : mm
+    dd = dd < 10 ? `0${dd.toString()}` : dd
+
+    const date = yyyy + '-' + mm + '-' + dd
+    onChangeDate(date)
   }, [selectedDate])
 
   useEffect(() => {
@@ -36,7 +46,7 @@ const PopupDatePicker = ({
         presentation='date'
         value={selectedDate}
         onIonChange={e => setSelectedDate(prev => (prev = e.detail.value))}
-      ></IonDatetime>
+      />
     </PopupLayout>
   )
 }

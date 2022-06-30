@@ -117,12 +117,30 @@ const CSVTest = () => {
         console.log('---------------------------')
         console.log(results.data)
         console.log('---------------------------')
+
+        console.log(results.data[1][5])
+        results.data[1][5].split('').map(ch => {
+          console.log(ch.charCodeAt(0))
+        })
       }
     })
   }
 
+  const readPure = () => {
+    const contentType = 'text/csv'
+    const csvFile = new Blob([CSV.Bridge], { type: contentType })
+    const file = new File([CSV.Bridge], 'BRIDGE.csv', { type: contentType })
+
+    const reader = new FileReader()
+    reader.onload = e => {
+      console.log(e.target.result)
+    }
+    reader.readAsText(file)
+  }
+
   useEffect(() => {
-    readFile()
+    // readFile()
+    readPure()
   }, [])
 
   return <Styled.Container style={{ backgroundColor: 'violet' }} />

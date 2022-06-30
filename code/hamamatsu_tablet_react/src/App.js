@@ -34,6 +34,7 @@ import {
   MenuRouterTypeFlagCalvert1,
   MenuRouterTypeFlagCalvert2,
   Shashinchou,
+  ShashinchouWithBarType1,
   Test
 } from './pages'
 
@@ -77,6 +78,9 @@ const App = () => {
             </Route>
             <Route exact path={NamePages.Shashinchou}>
               <Shashinchou />
+            </Route>
+            <Route exact path={NamePages.ShashinchouWithBarType1}>
+              <ShashinchouWithBarType1 />
             </Route>
             <Route exact path={NamePages.Test}>
               <Test />

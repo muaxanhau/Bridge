@@ -12,42 +12,17 @@ import {
 import ButtonIcon from './../ButtonIcon/ButtonIcon'
 import Text from '../Text/Text'
 import { caretForwardOutline, chevronBackOutline } from 'ionicons/icons'
+import { reducer } from './reducer'
 
 // constants
 const ICON_SIZE = '30px'
 
-// reducer
-const reducer = (state, action) => {
-  switch (action.type) {
-    case 'SET_DATA_LIST_BRIDGE':
-      return {
-        ...state,
-        dataListBridge: Array.isArray(action.payload)
-          ? action.payload
-          : state.dataListBridge
-      }
-    case 'MINIMIZE':
-      return {
-        ...state,
-        isMinimize: true
-      }
-    case 'MAXIMIZE':
-      return {
-        ...state,
-        isMinimize: false
-      }
-    case 'SET_INDEX':
-      return {
-        ...state,
-        index: action.payload
-      }
-    default:
-      return state
-  }
-}
-
 // main
-const TableListBridge = ({ data = [], onChangeSelectedBridge = id => {} }) => {
+const TableListBridge = ({
+  data = [],
+  flgTablet = 0,
+  onChangeSelectedBridge = id => {}
+}) => {
   // state
   const [state, dispatch] = useReducer(reducer, {
     isMinimize: false,
@@ -110,7 +85,11 @@ const TableListBridge = ({ data = [], onChangeSelectedBridge = id => {} }) => {
               <Row
                 key={index.toString()}
                 selected={index === state.index}
-                tested={item.CODE_SHINDAN}
+                tested={
+                  flgTablet === 0
+                    ? item.codeShindanFlgTablet0
+                    : item.codeShindanFlgTablet1
+                }
                 onClick={() => {
                   handleItem(index, item.BRIDGE_ID)
                 }}
@@ -122,7 +101,11 @@ const TableListBridge = ({ data = [], onChangeSelectedBridge = id => {} }) => {
                   <Text>{item.NAME_SHISETSU}</Text>
                 </Column>
                 <Column>
-                  <Text>{item.NAME_SHINDAN || String.sue_tenken}</Text>
+                  <Text>
+                    {flgTablet === 0
+                      ? item.nameShindanFlgTablet0
+                      : item.nameShindanFlgTablet1}
+                  </Text>
                 </Column>
               </Row>
             ))}

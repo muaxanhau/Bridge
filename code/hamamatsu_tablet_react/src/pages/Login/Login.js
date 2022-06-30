@@ -22,6 +22,7 @@ const Login = () => {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors }
   } = useForm({
     resolver: yupResolver(schemaLogin)
@@ -34,9 +35,13 @@ const Login = () => {
     onSuccess: data => {
       const isExisted = !!data.length
 
-      isExisted
-        ? history.push(NamePages.Menu)
-        : setIsInvalid(prev => (prev = true))
+      if (isExisted) {
+        history.push(NamePages.Menu)
+        return
+      }
+
+      reset()
+      setIsInvalid(prev => (prev = true))
     }
   })
   const [isInvalid, setIsInvalid] = useState(undefined)

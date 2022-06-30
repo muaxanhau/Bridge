@@ -5,6 +5,7 @@ import TenkenGyoumuMap from './TenkenGyoumuMap/TenkenGyoumuMap'
 import MenuRouterTypeFlagCalvert1 from './MenuRouterTypeFlagCalvert1/MenuRouterTypeFlagCalvert1'
 import MenuRouterTypeFlagCalvert2 from './MenuRouterTypeFlagCalvert2/MenuRouterTypeFlagCalvert2'
 import Shashinchou from './Shashinchou/Shashinchou'
+import ShashinchouWithBarType1 from './ShashinchouWithBarType1/ShashinchouWithBarType1'
 import NyuuryokuGamen1 from './NyuuryokuGamen1/NyuuryokuGamen1'
 import NyuuryokuGamen2 from './NyuuryokuGamen2/NyuuryokuGamen2'
 import GenkyouShashin from './GenkyouShashin/GenkyouShashin'
@@ -20,6 +21,7 @@ export {
   MenuRouterTypeFlagCalvert1,
   MenuRouterTypeFlagCalvert2,
   Shashinchou,
+  ShashinchouWithBarType1,
   NyuuryokuGamen1,
   NyuuryokuGamen2,
   GenkyouShashin,

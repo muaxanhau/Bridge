@@ -6,6 +6,7 @@ const NamePages = {
   MenuRouterTypeFlagCalvert1: '/menu-router-type-flag-calvert-1',
   MenuRouterTypeFlagCalvert2: '/menu-router-type-flag-calvert-2',
   Shashinchou: '/shashinchou',
+  ShashinchouWithBarType1: '/shashinchou-bar-type-1',
   NyuuryokuGamen1: '/nyuuryoku-gamen-1',
   NyuuryokuGamen2: '/nyuuryoku-gamen-2',
   GenkyouShashin: '/genkyouShashin',

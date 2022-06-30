@@ -1,20 +1,19 @@
 import React, { useState } from 'react'
 import { String, NamePages } from '../../constants'
+import Shashinchou from '../Shashinchou/Shashinchou'
 import NyuuryokuGamen1 from './../NyuuryokuGamen1/NyuuryokuGamen1'
 import NyuuryokuGamen2 from './../NyuuryokuGamen2/NyuuryokuGamen2'
 import GenkyouShashin from './../GenkyouShashin/GenkyouShashin'
 import { HeaderBarType2 } from './../../components'
-import { useHistory } from 'react-router-dom'
-
-// constants
+import { useHistory, useLocation } from 'react-router-dom'
 
 // main
 const MenuRouterTypeFlagCalvert1 = () => {
   // constants
-  const [currentNamePage, setCurrentNamePage] = useState(
-    NamePages.NyuuryokuGamen1
-  )
+  const [currentNamePage, setCurrentNamePage] = useState(NamePages.Shashinchou)
   const history = useHistory()
+  const location = useLocation()
+  const { NO_GYOUMU, BRIDGE_ID } = location.state
   const SIDE_BAR_DATA = [
     {
       title: String.konkai_tenken,
@@ -22,7 +21,7 @@ const MenuRouterTypeFlagCalvert1 = () => {
         {
           title: String.shashinchou,
           onClick: () => {
-            history.push(NamePages.Shashinchou)
+            setCurrentNamePage(prev => (prev = NamePages.Shashinchou))
           }
         },
         {
@@ -64,9 +63,18 @@ const MenuRouterTypeFlagCalvert1 = () => {
       title={NamePages.Japanese[currentNamePage]}
       data={SIDE_BAR_DATA}
     >
-      {currentNamePage === NamePages.NyuuryokuGamen1 && <NyuuryokuGamen1 />}
-      {currentNamePage === NamePages.NyuuryokuGamen2 && <NyuuryokuGamen2 />}
-      {currentNamePage === NamePages.GenkyouShashin && <GenkyouShashin />}
+      {currentNamePage === NamePages.Shashinchou && (
+        <Shashinchou NO_GYOUMU={NO_GYOUMU} BRIDGE_ID={BRIDGE_ID} />
+      )}
+      {currentNamePage === NamePages.NyuuryokuGamen1 && (
+        <NyuuryokuGamen1 NO_GYOUMU={NO_GYOUMU} BRIDGE_ID={BRIDGE_ID} />
+      )}
+      {currentNamePage === NamePages.NyuuryokuGamen2 && (
+        <NyuuryokuGamen2 NO_GYOUMU={NO_GYOUMU} BRIDGE_ID={BRIDGE_ID} />
+      )}
+      {currentNamePage === NamePages.GenkyouShashin && (
+        <GenkyouShashin NO_GYOUMU={NO_GYOUMU} BRIDGE_ID={BRIDGE_ID} />
+      )}
     </HeaderBarType2>
   )
 }

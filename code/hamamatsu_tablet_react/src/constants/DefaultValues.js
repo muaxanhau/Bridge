@@ -7,8 +7,8 @@ const DefaultValues = {
       password: '1'
     },
     {
-      username: 'admin2',
-      password: '2'
+      username: 'guest',
+      password: '1'
     }
   ]
 }

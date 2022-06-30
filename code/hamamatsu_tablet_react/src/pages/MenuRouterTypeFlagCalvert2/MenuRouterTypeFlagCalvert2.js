@@ -6,8 +6,6 @@ import GenkyouShashin from './../GenkyouShashin/GenkyouShashin'
 import { HeaderBarType2 } from './../../components'
 import { useHistory } from 'react-router-dom'
 
-// constants
-
 // main
 const MenuRouterTypeFlagCalvert2 = () => {
   // constants

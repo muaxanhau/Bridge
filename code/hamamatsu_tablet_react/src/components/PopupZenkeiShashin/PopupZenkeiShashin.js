@@ -11,32 +11,10 @@ import ButtonType4 from './../ButtonType4/ButtonType4'
 import InputTextArea from './../InputTextArea/InputTextArea'
 import PopupSentaku from '../PopupSentaku/PopupSentaku'
 import { useQuery, useMutation } from '../../utils/hooks'
+import { reducer } from './reducer'
 
 // constants
 const TEXT_COLOR = 'var(--color-6)'
-
-// reducer
-const reducer = (state, action) => {
-  switch (action.type) {
-    case 'SHOW_SENTAKU_POPUP':
-      return {
-        ...state,
-        showSentakuPopup: true
-      }
-    case 'HIDE_SENTAKU_POPUP':
-      return {
-        ...state,
-        showSentakuPopup: false
-      }
-    case 'SET_TXTA_SHOKENTOU':
-      return {
-        ...state,
-        txtaShokentou: action.payload
-      }
-    default:
-      return state
-  }
-}
 
 // main
 const PopupZenkeiShashin = ({

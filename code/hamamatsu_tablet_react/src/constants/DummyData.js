@@ -19,9 +19,16 @@ const Business = [
   { id: 14, year: '2020', name: 'は須ュー項目です。' }
 ]
 
+const Houshin = [
+  ['', ''],
+  ['起点', '起点'],
+  ['終点', '終点']
+]
+
 const DummyData = {
   Commons,
-  Business
+  Business,
+  Houshin
 }
 
 export default DummyData

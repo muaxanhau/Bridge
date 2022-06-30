@@ -17,12 +17,8 @@ const AppProvider = ({ children }) => {
     stateLoader: state.loader,
 
     //=================================================================
-    loaderTurnOn: () => {
-      dispatch({ type: actions.LOADER_TURN_ON })
-    },
-    loaderTurnOff: () => {
-      dispatch({ type: actions.LOADER_TURN_OFF })
-    }
+    loaderTurnOn: () => dispatch({ type: actions.LOADER_TURN_ON }),
+    loaderTurnOff: () => dispatch({ type: actions.LOADER_TURN_OFF })
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

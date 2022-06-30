@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer } from 'react'
+import React, { useEffect, useReducer, useRef } from 'react'
 import { Container } from './elements'
 import { closeCircleSharp } from 'ionicons/icons'
 import { String, SQLite } from './../../constants'
@@ -12,29 +12,16 @@ import InputText from './../InputText/InputText'
 import InputTextArea from './../InputTextArea/InputTextArea'
 import { useQuery, useMutation } from '../../utils/hooks'
 import { useIonAlert } from '@ionic/react'
-import { useForm } from 'react-hook-form'
-import { schemaPopupSonshouShashin } from './../../utils/validations'
-import { yupResolver } from '@hookform/resolvers/yup'
 import PopupTakePhoto from '../PopupTakePhoto/PopupTakePhoto'
 import PopupTenkenYouryouHyouji from '../PopupTenkenYouryouHyouji/PopupTenkenYouryouHyouji'
 import { getBase64FromImage } from './../../utils/commons'
+import { useForm } from 'react-hook-form'
 
 // constants
 
 // reducer
 const reducer = (state, action) => {
   switch (action.type) {
-    case 'SET_DEFAULT':
-      return {
-        ...state,
-        cbbHanteKubun: action.payload.cbbHanteKubun || state.cbbHanteKubun,
-        cbbBuzaimei: action.payload.cbbBuzaimei || state.cbbBuzaimei,
-        cbbHenjouShurui:
-          action.payload.cbbHenjouShurui || state.cbbHenjouShurui,
-        txtHenjouShurui:
-          action.payload.txtHenjouShurui || state.txtHenjouShurui,
-        txtaBikou: action.payload.txtaBikou || state.txtaBikou
-      }
     case 'SET_DATA_LIST_M_SHINDAN':
       return {
         ...state,
@@ -42,7 +29,7 @@ const reducer = (state, action) => {
           ? action.payload
           : state.dataListMShindan
       }
-    case 'SET_DATA_LIST_M_BUZAI_ZAIRYOU':
+    case 'SET_DATA_LIST_M_BUZAI_TENKENHYO':
       return {
         ...state,
         dataListBuzai: Array.isArray(action.payload)
@@ -107,12 +94,6 @@ const PopupSonshouShashin = ({
 }) => {
   // state
   const [state, dispatch] = useReducer(reducer, {
-    cbbHanteKubun: undefined,
-    cbbBuzaimei: undefined,
-    cbbHenjouShurui: undefined,
-    txtHenjouShurui: undefined,
-    txtaBikou: undefined,
-
     //=======================================
     dataListMShindan: [],
     dataListBuzai: [],
@@ -130,29 +111,50 @@ const PopupSonshouShashin = ({
   const {
     register,
     handleSubmit,
-    formState: { errors }
-  } = useForm({
-    // resolver: yupResolver(schemaPopupSonshouShashin)
-  })
+    setValue,
+    formState: { errors },
+    reset
+  } = useForm()
+  const isValidTxtShurui = txtShurui => {
+    if (state.enableTxtHenjouShurui && !txtShurui?.length) {
+      present({
+        message: String.E0001,
+        buttons: ['Ok']
+      })
+
+      return false
+    }
+
+    if (state.enableTxtHenjouShurui && txtShurui?.length > 50) {
+      present({
+        message: '50' + String.E0003.E2,
+        buttons: ['Ok']
+      })
+
+      return false
+    }
+
+    return true
+  }
 
   // query - mutation
   const queryDefault = useQuery({
     queryString:
       SQLite.QueryString.TenkenhyoGazouTemp.select
         .ShindanTenken_NameBuzai_CodeDamageShurui_DamageShurui_Bikou.by
-        .NoGyoumu_BridgeID.with.FlgTabletEqual1_GazouIDNoEqual0,
-    params: [noGyoumu, bridgeID],
+        .NoGyoumu_BridgeID_GazouID.with.FlgTabletEqual1,
+    params: [noGyoumu, bridgeID, gazouID],
+    enable: false,
     onSuccess: data => {
-      dispatch({
-        type: 'SET_DEFAULT',
-        payload: {
-          cbbHanteKubun: data[0].SHINDAN_TENKEN,
-          cbbBuzaimei: data[0].NAME_BUZAI,
-          cbbHenjouShurui: data[0].CODE_DAMAGE_SHURUI,
-          txtHenjouShurui: data[0].DAMAGE_SHURUI,
-          txtaBikou: data[0].BIKOU
-        }
-      })
+      const buzai = state.dataListBuzai.filter(
+        item => item.NAME_BUZAI_TENKENHYO === data[0].NAME_BUZAI
+      )[0]?.CODE_BUZAI_TENKENHYO
+
+      setValue('shindan', data[0].SHINDAN_TENKEN)
+      setValue('buzai', buzai)
+      setValue('shurui', data[0].CODE_DAMAGE_SHURUI)
+      setValue('txtShurui', data[0].DAMAGE_SHURUI)
+      setValue('txtaBikou', data[0].BIKOU)
     }
   })
   const queryMShindan = useQuery({
@@ -162,12 +164,10 @@ const PopupSonshouShashin = ({
       dispatch({ type: 'SET_DATA_LIST_M_SHINDAN', payload: data })
     }
   })
-  const queryMBuzaiZairyou = useQuery({
-    queryString:
-      SQLite.QueryString.MBuzaiZairyou.select.CodeBuzaiZairyou_NameBuzaiZairyou
-        .pure,
+  const queryMBuzaiTenkenhyo = useQuery({
+    queryString: SQLite.QueryString.MBuzaiTenkenhyo.select.all.pure,
     onSuccess: data => {
-      dispatch({ type: 'SET_DATA_LIST_M_BUZAI_ZAIRYOU', payload: data })
+      dispatch({ type: 'SET_DATA_LIST_M_BUZAI_TENKENHYO', payload: data })
     }
   })
   const queryMDamageShurui = useQuery({
@@ -181,18 +181,21 @@ const PopupSonshouShashin = ({
   const mutationDeleteTenkenhyoGazouTemp = useMutation({
     queryString:
       SQLite.QueryString.TenkenhyoGazouTemp.delete.by.NoGyoumu_BridgeID_GazouID
-        .pure
-  })
-  const mutationInsertTenkenhyoGazouTemp = useMutation({
-    queryString:
-      SQLite.QueryString.TenkenhyoGazouTemp.insert
-        .NoGyoumu_BridgeID_ShindanTenken_NameBuzai_CodeDamageShurui_DamageShurui_Bikou
+        .pure,
+    onSuccess: onChangeGlobalValue
   })
   const mutationUpdateFullPath = useMutation({
     queryString:
       SQLite.QueryString.TenkenhyoGazouTemp.update.FullPath.by
         .NoGyoumu_BridgeID_GazouID.with.FlgTabletEqual1,
-    onSuccess: () => onChangeGlobalValue()
+    onSuccess: onChangeGlobalValue
+  })
+  const mutationUpdateTenkenhyoGazouTemp = useMutation({
+    queryString:
+      SQLite.QueryString.TenkenhyoGazouTemp.update
+        .ShindanTenken_NoBuzai_NameBuzai_CodeDamageShurui_DamageShurui_Bikou.by
+        .NoGyoumu_BridgeID_GazouID.with.FlgTabletEqual1,
+    onSuccess: onChangeGlobalValue
   })
 
   // handles
@@ -202,11 +205,16 @@ const PopupSonshouShashin = ({
   const handleHideTenkenYouryouHyoujiPopup = () => {
     dispatch({ type: 'HIDE_TENKEN_YOURYOU_HYOUJI_POPUP' })
   }
+  const handleShowTakePhotoPopup = () => {
+    dispatch({ type: 'SHOW_TAKE_PHOTO_POPUP' })
+  }
+  const handleHideTakePhotoPopup = () => {
+    dispatch({ type: 'HIDE_TAKE_PHOTO_POPUP' })
+  }
   const handleOnChangeTxtHenjouShurui = e => {
     dispatch({
       type: `${
-        // tmp ! => none
-        !state.dataListMDamageShurui
+        state.dataListMDamageShurui
           .filter(
             item =>
               parseInt(item.CODE_DAMAGE_SHURUI) === parseInt(e.target.value)
@@ -233,11 +241,11 @@ const PopupSonshouShashin = ({
         {
           text: String.hai,
           handler: () => {
-            mutationDeleteTenkenhyoGazouTemp
-              .execute([noGyoumu, bridgeID, gazouID])
-              .then(() => {
-                onChangeGlobalValue()
-              })
+            mutationDeleteTenkenhyoGazouTemp.execute([
+              noGyoumu,
+              bridgeID,
+              gazouID
+            ])
 
             onClickClose()
           }
@@ -245,36 +253,58 @@ const PopupSonshouShashin = ({
       ]
     })
   }
-  const handleTouroku = () => {
-    mutationUpdateFullPath.execute([
-      state.tmpBase64Image,
-      noGyoumu,
-      bridgeID,
-      gazouID
-    ])
-    onClickClose()
-  }
   const onSubmit = data => {
-    console.log(data)
-  }
+    const { shindan, buzai, shurui, txtShurui, txtaBikou } = data
 
-  // handles
-  const handleShowTakePhotoPopup = () => {
-    dispatch({ type: 'SHOW_TAKE_PHOTO_POPUP' })
+    const isValid = isValidTxtShurui(txtShurui)
+    if (!isValid) {
+      return
+    }
+
+    const nameBuzai = state.dataListBuzai.filter(
+      item => parseInt(item.CODE_BUZAI_TENKENHYO) === parseInt(buzai)
+    )[0]?.NAME_BUZAI_TENKENHYO
+
+    Promise.all([
+      mutationUpdateTenkenhyoGazouTemp.execute([
+        shindan,
+        buzai,
+        nameBuzai,
+        shurui,
+        state.enableTxtHenjouShurui ? txtShurui : '',
+        txtaBikou,
+        noGyoumu,
+        bridgeID,
+        gazouID
+      ]),
+      state.tmpBase64Image &&
+        mutationUpdateFullPath.execute([
+          state.tmpBase64Image,
+          noGyoumu,
+          bridgeID,
+          gazouID
+        ])
+    ]).then(() => {
+      onClickClose()
+    })
+
+    // handleTouroku()
   }
-  const handleHideTakePhotoPopup = () => {
-    dispatch({ type: 'HIDE_TAKE_PHOTO_POPUP' })
+  const handleOnClickNyuuryoku = ({ shindan, shurui }) => {
+    setValue('shindan', shindan)
+    setValue('shurui', shurui)
   }
 
   // effects
   useEffect(() => {
-    !hidden && queryDefault.reExecute()
+    if (hidden) {
+      return
+    }
 
-    hidden && dispatch({ type: 'SET_TMP_BASE_64_IMAGE', payload: null })
+    reset()
+    queryDefault.reExecute()
+    dispatch({ type: 'SET_TMP_BASE_64_IMAGE', payload: null })
   }, [hidden])
-  useEffect(() => {
-    console.log(errors)
-  }, [errors])
 
   // render
   if (hidden) {
@@ -303,7 +333,6 @@ const PopupSonshouShashin = ({
                     <InputSelection
                       {...register('shindan')}
                       data={state.dataListMShindan}
-                      defaultValue={state.cbbHanteKubun ?? 0}
                     />
                   </Styled.Column>
                 </Styled.Row>
@@ -316,11 +345,6 @@ const PopupSonshouShashin = ({
                     <InputSelection
                       {...register('buzai')}
                       data={state.dataListBuzai}
-                      defaultValue={
-                        state.dataListBuzai.filter(
-                          item => item.NAME_BUZAI === state.cbbBuzaimei
-                        )[0]?.CODE_BUZAI_ZAIRYOU
-                      }
                     />
                   </Styled.Column>
                 </Styled.Row>
@@ -333,7 +357,6 @@ const PopupSonshouShashin = ({
                     <InputSelection
                       {...register('shurui')}
                       data={state.dataListMDamageShurui}
-                      defaultValue={state.cbbHenjouShurui || 0}
                       onChange={handleOnChangeTxtHenjouShurui}
                     />
                   </Styled.Column>
@@ -341,7 +364,6 @@ const PopupSonshouShashin = ({
                     <InputText
                       {...register('txtShurui')}
                       disableBorder={true}
-                      value={state.txtHenjouShurui}
                       disabled={!state.enableTxtHenjouShurui}
                     />
                   </Styled.Column>
@@ -359,11 +381,10 @@ const PopupSonshouShashin = ({
                   </Styled.ColumnTitle>
                   <Styled.Column colSpan={3}>
                     <InputTextArea
-                      {...register('bikou')}
+                      {...register('txtaBikou')}
                       rows={5}
                       disableBorder
                       style={{ width: '100%' }}
-                      defaultValue={state.txtaBikou}
                     />
                   </Styled.Column>
                 </Styled.Row>
@@ -382,11 +403,7 @@ const PopupSonshouShashin = ({
                 color='green'
                 onClick={handleShowTakePhotoPopup}
               />
-              <ButtonType1
-                title={String.touroku}
-                type='submit'
-                onClick={handleTouroku}
-              />
+              <ButtonType1 title={String.touroku} type='submit' />
             </Styled.ContentRow>
           </Styled.ContentCol>
         </Container>
@@ -401,6 +418,7 @@ const PopupSonshouShashin = ({
       <PopupTenkenYouryouHyouji
         hidden={!state.showTenkenYouryouHyoujiPopup}
         onClickClose={handleHideTenkenYouryouHyoujiPopup}
+        onClickNyuuryoku={handleOnClickNyuuryoku}
       />
     </>
   )

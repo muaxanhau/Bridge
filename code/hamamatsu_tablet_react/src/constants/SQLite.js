@@ -124,14 +124,6 @@ const Table = {
       FlgCalvert: {
         name: 'FLG_CALVERT',
         type: 'INTEGER'
-      },
-      IdoStartTenken: {
-        name: 'IDO_START_TENKEN',
-        type: 'VARCHAR(50)'
-      },
-      KeidoStartTenken: {
-        name: 'KEIDO_START_TENKEN',
-        type: 'VARCHAR(50)'
       }
     }
   },
@@ -188,7 +180,7 @@ const Table = {
       },
       Bikou: {
         name: 'BIKOU',
-        type: 'VARCHAR(500)'
+        type: 'TEXT'
       }
     }
   },
@@ -203,7 +195,7 @@ const Table = {
         name: 'BRIDGE_ID', // PRIMARY KEY
         type: 'VARCHAR(50)'
       },
-      FlgCalvert: {
+      FlgTablet: {
         name: 'FLG_TABLET', // PRIMARY KEY
         type: 'INTEGER'
       },
@@ -245,7 +237,7 @@ const Table = {
       },
       Bikou: {
         name: 'BIKOU',
-        type: 'VARCHAR(500)'
+        type: 'TEXT'
       }
     }
   },
@@ -339,7 +331,7 @@ const Table = {
       },
       Bikou: {
         name: 'BIKOU',
-        type: 'VARCHAR(500)'
+        type: 'TEXT'
       },
       HoushinChousa: {
         name: 'HOUSHIN_CHOUSA',
@@ -412,7 +404,7 @@ const Table = {
       },
       Bikou: {
         name: 'BIKOU',
-        type: 'VARCHAR(500)'
+        type: 'TEXT'
       },
       HoushinChousa: {
         name: 'HOUSHIN_CHOUSA',
@@ -718,8 +710,6 @@ const QueryString = {
           ${Table.Bridge.columns.KyoriJi.name} ${Table.Bridge.columns.KyoriJi.type},
           ${Table.Bridge.columns.KyoriItaru.name} ${Table.Bridge.columns.KyoriItaru.type},
           ${Table.Bridge.columns.FlgCalvert.name} ${Table.Bridge.columns.FlgCalvert.type},
-          ${Table.Bridge.columns.IdoStartTenken.name} ${Table.Bridge.columns.IdoStartTenken.type},
-          ${Table.Bridge.columns.KeidoStartTenken.name} ${Table.Bridge.columns.KeidoStartTenken.type},
           PRIMARY KEY (${Table.Bridge.columns.NoGyoumu.name}, ${Table.Bridge.columns.BridgeID.name})
         )
       `
@@ -728,11 +718,79 @@ const QueryString = {
       table: `DELETE FROM ${Table.Bridge.name}`
     },
     insert: {
-      fullColumn: `INSERT INTO ${Table.Bridge.name} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      fullColumn: `INSERT INTO ${Table.Bridge.name} (
+        ${Table.Bridge.columns.NoGyoumu.name},
+        ${Table.Bridge.columns.BridgeID.name},
+        ${Table.Bridge.columns.CodeBridge.name},
+        ${Table.Bridge.columns.BridgeIDTenken.name},
+        ${Table.Bridge.columns.NameShisetsu.name},
+        ${Table.Bridge.columns.NameShisetsuKana.name},
+        ${Table.Bridge.columns.NameRosen.name},
+        ${Table.Bridge.columns.Shozaichi1Ji.name},
+        ${Table.Bridge.columns.Shozaichi1Itaru.name},
+        ${Table.Bridge.columns.NameSoshiki.name},
+        ${Table.Bridge.columns.RokaJouken.name},
+        ${Table.Bridge.columns.Ukairo.name},
+        ${Table.Bridge.columns.NameJisenIppan.name},
+        ${Table.Bridge.columns.NameKinkyuyuso.name},
+        ${Table.Bridge.columns.SenyuBukken.name},
+        ${Table.Bridge.columns.NenKasetsu.name},
+        ${Table.Bridge.columns.BridgeLength.name},
+        ${Table.Bridge.columns.WidthZen.name},
+        ${Table.Bridge.columns.BridgeKeishiki.name},
+        ${Table.Bridge.columns.KyoriJi.name},
+        ${Table.Bridge.columns.KyoriItaru.name},
+        ${Table.Bridge.columns.FlgCalvert.name}
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     },
     select: {
       all: {
-        pure: ``
+        pure: `SELECT * FROM ${Table.Bridge.name}`
+      },
+      FlgCalvert: {
+        by: {
+          NoGyoumu_BridgeID: {
+            pure: `
+              SELECT ${Table.Bridge.columns.FlgCalvert.name} 
+              FROM ${Table.Bridge.name}
+              WHERE 
+                ${Table.Bridge.columns.NoGyoumu.name} = ? AND
+                ${Table.Bridge.columns.BridgeID.name} = ?
+            `
+          }
+        }
+      },
+      NenKasetsu_BridgeLength_WidthZen_BridgeKeisiki: {
+        by: {
+          NoGyoumu_BridgeID: {
+            pure: `
+              SELECT 
+                ${Table.Bridge.columns.NenKasetsu.name},
+                ${Table.Bridge.columns.BridgeLength.name},
+                ${Table.Bridge.columns.WidthZen.name},
+                ${Table.Bridge.columns.BridgeKeishiki.name}
+              FROM ${Table.Bridge.name}
+              WHERE 
+                ${Table.Bridge.columns.NoGyoumu.name} = ? AND
+                ${Table.Bridge.columns.BridgeID.name} = ?
+            `
+          }
+        }
+      }
+    },
+    update: {
+      FlgCalvert: {
+        by: {
+          NoGyoumu_BridgeID: {
+            pure: `
+              UPDATE ${Table.Bridge.name}
+              SET ${Table.Bridge.columns.FlgCalvert.name} = ?
+              WHERE
+                ${Table.Bridge.columns.NoGyoumu.name} = ? AND
+                ${Table.Bridge.columns.BridgeID.name} = ?
+            `
+          }
+        }
       }
     }
   },
@@ -758,14 +816,130 @@ const QueryString = {
       `
     },
     delete: {
-      table: `DELETE FROM ${Table.TenkenRireki.name}`
+      table: `DELETE FROM ${Table.TenkenRireki.name}`,
+      by: {
+        NoGyoumu_BridgeID: {
+          pure: `
+            DELETE FROM ${Table.TenkenRireki.name} 
+              WHERE 
+                ${Table.TenkenRireki.columns.NoGyoumu.name} = ? AND
+                ${Table.TenkenRireki.columns.BridgeID.name} = ?
+          `,
+          with: {
+            FlgTabletEqual1: `
+              DELETE FROM ${Table.TenkenRireki.name} 
+              WHERE 
+                ${Table.TenkenRireki.columns.NoGyoumu.name} = ? AND
+                ${Table.TenkenRireki.columns.BridgeID.name} = ? AND
+                ${Table.TenkenRireki.columns.FlgTablet.name} = 1
+            `
+          }
+        }
+      }
     },
     insert: {
-      fullColumn: `INSERT INTO ${Table.TenkenRireki.name} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      fullColumn: `
+        INSERT INTO ${Table.TenkenRireki.name} (
+          ${Table.TenkenRireki.columns.NoGyoumu.name},
+          ${Table.TenkenRireki.columns.BridgeID.name},
+          ${Table.TenkenRireki.columns.NengappiTenken.name},
+          ${Table.TenkenRireki.columns.NameTenkensha.name},
+          ${Table.TenkenRireki.columns.ShindanTenken.name},
+          ${Table.TenkenRireki.columns.Shoken.name},
+          ${Table.TenkenRireki.columns.NameShisetsuTenken.name},
+          ${Table.TenkenRireki.columns.NameShisetsuKanaTenken.name},
+          ${Table.TenkenRireki.columns.IdoStartTenken.name},
+          ${Table.TenkenRireki.columns.KeidoStartTenken.name},
+          ${Table.TenkenRireki.columns.NengappiKoushin.name},
+          ${Table.TenkenRireki.columns.FlgTablet.name},
+          ${Table.TenkenRireki.columns.Bikou.name}
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `
     },
     select: {
       all: {
-        pure: ``
+        pure: `
+          SELECT * FROM ${Table.TenkenRireki.name}
+        `
+      },
+      FlgTablet: {
+        by: {
+          NoGyoumu_BridgeID: {
+            pure: `
+              SELECT ${Table.TenkenRireki.columns.FlgTablet.name}
+              FROM ${Table.TenkenRireki.name}
+              WHERE 
+                ${Table.TenkenRireki.columns.NoGyoumu.name} = ? AND
+                ${Table.TenkenRireki.columns.BridgeID.name} = ?
+            `
+          }
+        }
+      },
+      NameTenkensha_ShindanTenken_Shoken: {
+        by: {
+          NoGyoumu_BridgeID_FlgTablet: {
+            pure: `
+              SELECT 
+                ${Table.TenkenRireki.columns.NameTenkensha.name},
+                ${Table.TenkenRireki.columns.ShindanTenken.name},
+                ${Table.TenkenRireki.columns.Shoken.name}
+              FROM ${Table.TenkenRireki.name}
+              WHERE
+                ${Table.TenkenRireki.columns.NoGyoumu.name} = ? AND
+                ${Table.TenkenRireki.columns.BridgeID.name} = ? AND
+                ${Table.TenkenRireki.columns.FlgTablet.name} = ?
+            `
+          }
+        }
+      }
+    },
+    update: {
+      ShindanTenken: {
+        by: {
+          NoGyoumu_BridgeID: {
+            with: {
+              FlgTabletEqual0: `
+                UPDATE ${Table.TenkenRireki.name}
+                SET ${Table.TenkenRireki.columns.ShindanTenken.name} = ?
+                WHERE
+                  ${Table.TenkenRireki.columns.NoGyoumu.name} = ? AND
+                  ${Table.TenkenRireki.columns.BridgeID.name} = ?
+              `
+            }
+          }
+        }
+      },
+      NengappiTenken: {
+        by: {
+          NoGyoumu_BridgeID_FlgTablet: {
+            pure: `
+              UPDATE ${Table.TenkenRireki.name}
+              SET ${Table.TenkenRireki.columns.NengappiTenken.name} = ?
+              WHERE
+                ${Table.TenkenRireki.columns.NoGyoumu.name} = ? AND
+                ${Table.TenkenRireki.columns.BridgeID.name} = ? AND
+                ${Table.TenkenRireki.columns.FlgTablet.name} = ?
+            `
+          }
+        }
+      },
+      NengappiTenken_NameTenkensha_ShindanTenken_Shoken: {
+        by: {
+          NoGyoumu_BridgeID_FlgTablet: {
+            pure: `
+              UPDATE ${Table.TenkenRireki.name}
+              SET 
+                ${Table.TenkenRireki.columns.NengappiTenken.name} = ?,
+                ${Table.TenkenRireki.columns.NameTenkensha.name} = ?,
+                ${Table.TenkenRireki.columns.ShindanTenken.name} = ?,
+                ${Table.TenkenRireki.columns.Shoken.name} = ?
+              WHERE
+                ${Table.TenkenRireki.columns.NoGyoumu.name} = ? AND
+                ${Table.TenkenRireki.columns.BridgeID.name} = ? AND
+                ${Table.TenkenRireki.columns.FlgTablet.name} = ?
+            `
+          }
+        }
       }
     }
   },
@@ -775,7 +949,7 @@ const QueryString = {
         CREATE TABLE IF NOT EXISTS ${Table.TenkenRirekiTemp.name} (
           ${Table.TenkenRirekiTemp.columns.NoGyoumu.name} ${Table.TenkenRirekiTemp.columns.NoGyoumu.type},
           ${Table.TenkenRirekiTemp.columns.BridgeID.name} ${Table.TenkenRirekiTemp.columns.BridgeID.type},
-          ${Table.TenkenRirekiTemp.columns.FlgCalvert.name} ${Table.TenkenRirekiTemp.columns.FlgCalvert.type},
+          ${Table.TenkenRirekiTemp.columns.FlgTablet.name} ${Table.TenkenRirekiTemp.columns.FlgTablet.type},
           ${Table.TenkenRirekiTemp.columns.NengappiTenken.name} ${Table.TenkenRirekiTemp.columns.NengappiTenken.type},
           ${Table.TenkenRirekiTemp.columns.NameTenkensha.name} ${Table.TenkenRirekiTemp.columns.NameTenkensha.type},
           ${Table.TenkenRirekiTemp.columns.ShindanTenken.name} ${Table.TenkenRirekiTemp.columns.ShindanTenken.type},
@@ -786,15 +960,41 @@ const QueryString = {
           ${Table.TenkenRirekiTemp.columns.KeidoStartTenken.name} ${Table.TenkenRirekiTemp.columns.KeidoStartTenken.type},
           ${Table.TenkenRirekiTemp.columns.NengappiKoushin.name} ${Table.TenkenRirekiTemp.columns.NengappiKoushin.type},
           ${Table.TenkenRirekiTemp.columns.Bikou.name} ${Table.TenkenRirekiTemp.columns.Bikou.type},
-          PRIMARY KEY (${Table.TenkenRirekiTemp.columns.NoGyoumu.name}, ${Table.TenkenRirekiTemp.columns.BridgeID.name}, ${Table.TenkenRirekiTemp.columns.FlgCalvert.name})
+          PRIMARY KEY (${Table.TenkenRirekiTemp.columns.NoGyoumu.name}, ${Table.TenkenRirekiTemp.columns.BridgeID.name}, ${Table.TenkenRirekiTemp.columns.FlgTablet.name})
         )
       `
     },
     delete: {
-      table: `DELETE FROM ${Table.TenkenRirekiTemp.name}`
+      table: `DELETE FROM ${Table.TenkenRirekiTemp.name}`,
+      by: {
+        NoGyoumu_BridgeID: {
+          pure: `
+            DELETE FROM ${Table.TenkenRirekiTemp.name} 
+              WHERE 
+                ${Table.TenkenRirekiTemp.columns.NoGyoumu.name} = ? AND
+                ${Table.TenkenRirekiTemp.columns.BridgeID.name} = ?
+          `
+        }
+      }
     },
     insert: {
-      fullColumn: `INSERT INTO ${Table.TenkenRirekiTemp.name} VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      fullColumn: `
+        INSERT INTO ${Table.TenkenRirekiTemp.name} (
+          ${Table.TenkenRirekiTemp.columns.NoGyoumu.name},
+          ${Table.TenkenRirekiTemp.columns.BridgeID.name},
+          ${Table.TenkenRirekiTemp.columns.NengappiTenken.name},
+          ${Table.TenkenRirekiTemp.columns.NameTenkensha.name},
+          ${Table.TenkenRirekiTemp.columns.ShindanTenken.name},
+          ${Table.TenkenRirekiTemp.columns.Shoken.name},
+          ${Table.TenkenRirekiTemp.columns.NameShisetsuTenken.name},
+          ${Table.TenkenRirekiTemp.columns.NameShisetsuKanaTenken.name},
+          ${Table.TenkenRirekiTemp.columns.IdoStartTenken.name},
+          ${Table.TenkenRirekiTemp.columns.KeidoStartTenken.name},
+          ${Table.TenkenRirekiTemp.columns.NengappiKoushin.name},
+          ${Table.TenkenRirekiTemp.columns.FlgTablet.name},
+          ${Table.TenkenRirekiTemp.columns.Bikou.name}
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
       NoGyoumu_BridgeID_NengappiTenken: {
         pure: `
           INSERT INTO ${Table.TenkenRirekiTemp.name} (
@@ -856,14 +1056,111 @@ const QueryString = {
       `
     },
     delete: {
-      table: `DELETE FROM ${Table.BuzaiHyouka.name}`
+      table: `DELETE FROM ${Table.BuzaiHyouka.name}`,
+      by: {
+        NoGyoumu_BridgeID: {
+          with: {
+            FlgTabletEqual1: `
+              DELETE FROM ${Table.BuzaiHyouka.name} 
+              WHERE 
+                ${Table.BuzaiHyouka.columns.NoGyoumu.name} = ? AND
+                ${Table.BuzaiHyouka.columns.BridgeID.name} = ? AND
+                ${Table.BuzaiHyouka.columns.FlgTablet.name} = 1
+            `
+          }
+        }
+      }
     },
     insert: {
-      fullColumn: ``
+      fullColumn: ``,
+      NoGyoumu_BridgeID_FlgTablet_NoBuzai_ShindanTenken_CodeHenjouTenken_BikouTenken: {
+        pure: `
+          INSERT INTO ${Table.BuzaiHyouka.name} (
+            ${Table.BuzaiHyouka.columns.NoGyoumu.name},
+            ${Table.BuzaiHyouka.columns.BridgeID.name},
+            ${Table.BuzaiHyouka.columns.FlgTablet.name},
+            ${Table.BuzaiHyouka.columns.NoBuzai.name},
+            ${Table.BuzaiHyouka.columns.ShindanTenken.name},
+            ${Table.BuzaiHyouka.columns.CodeHenjouTenken.name},
+            ${Table.BuzaiHyouka.columns.BikouTenken.name}
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        `
+      }
     },
     select: {
       all: {
-        pure: ``
+        pure: `SELECT * FROM ${Table.BuzaiHyouka.name}`,
+        by: {
+          NoGyoumu_BridgeID_FlgTablet: {
+            pure: `
+              SELECT * 
+              FROM ${Table.BuzaiHyouka.name}
+              WHERE 
+                ${Table.BuzaiHyouka.columns.NoGyoumu.name} = ? AND
+                ${Table.BuzaiHyouka.columns.BridgeID.name} = ? AND
+                ${Table.BuzaiHyouka.columns.FlgTablet.name} = ?
+            `
+          }
+        }
+      },
+      NoBuzai_ShindanTenken_CodeHenjouTenken_BikouTenken_ShindanSochigo_CodeHenjouSochigo_NengappiSaihentei: {
+        by: {
+          NoGyoumu_BridgeID_FlgTablet: {
+            pure: `
+              SELECT 
+                ${Table.BuzaiHyouka.columns.NoBuzai.name},
+                ${Table.BuzaiHyouka.columns.ShindanTenken.name},
+                ${Table.BuzaiHyouka.columns.CodeHenjouTenken.name},
+                ${Table.BuzaiHyouka.columns.BikouTenken.name},
+                ${Table.BuzaiHyouka.columns.ShindanSochigo.name},
+                ${Table.BuzaiHyouka.columns.CodeHenjouSochigo.name},
+                ${Table.BuzaiHyouka.columns.NengappiSaihantei.name}
+              FROM ${Table.BuzaiHyouka.name}
+              WHERE 
+                ${Table.BuzaiHyouka.columns.NoGyoumu.name} = ? AND
+                ${Table.BuzaiHyouka.columns.BridgeID.name} = ? AND
+                ${Table.BuzaiHyouka.columns.FlgTablet.name} = ?
+            `
+          }
+        }
+      }
+    },
+    update: {
+      fullColumn: {
+        by: {}
+      }
+    },
+    insert_update: {
+      ShindanTenken_CodeHenjouTenken_BikouTenken_ShindanSochigo_CodeHenjouSochigo_NengappiSaihantei: {
+        by: {
+          NoGyoumu_BridgeID_FlgTablet_NoBuzai: {
+            pure: `
+              INSERT INTO ${Table.BuzaiHyouka.name} (
+                ${Table.BuzaiHyouka.columns.NoGyoumu.name}, 
+                ${Table.BuzaiHyouka.columns.BridgeID.name}, 
+                ${Table.BuzaiHyouka.columns.FlgTablet.name}, 
+                ${Table.BuzaiHyouka.columns.NoBuzai.name}, 
+                ${Table.BuzaiHyouka.columns.ShindanTenken.name}, 
+                ${Table.BuzaiHyouka.columns.CodeHenjouTenken.name}, 
+                ${Table.BuzaiHyouka.columns.BikouTenken.name}, 
+                ${Table.BuzaiHyouka.columns.ShindanSochigo.name}, 
+                ${Table.BuzaiHyouka.columns.CodeHenjouSochigo.name}, 
+                ${Table.BuzaiHyouka.columns.NengappiSaihantei.name}
+              ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(
+                ${Table.BuzaiHyouka.columns.NoGyoumu.name}, 
+                ${Table.BuzaiHyouka.columns.BridgeID.name}, 
+                ${Table.BuzaiHyouka.columns.FlgTablet.name}, 
+                ${Table.BuzaiHyouka.columns.NoBuzai.name}
+              ) DO UPDATE SET
+                ${Table.BuzaiHyouka.columns.ShindanTenken.name} = ?, 
+                ${Table.BuzaiHyouka.columns.CodeHenjouTenken.name} = ?, 
+                ${Table.BuzaiHyouka.columns.BikouTenken.name} = ?, 
+                ${Table.BuzaiHyouka.columns.ShindanSochigo.name} = ?, 
+                ${Table.BuzaiHyouka.columns.CodeHenjouSochigo.name} = ?, 
+                ${Table.BuzaiHyouka.columns.NengappiSaihantei.name} = ?
+            `
+          }
+        }
       }
     }
   },
@@ -893,14 +1190,154 @@ const QueryString = {
       `
     },
     delete: {
-      table: `DELETE FROM ${Table.TenkenhyoGazou.name}`
+      table: `DELETE FROM ${Table.TenkenhyoGazou.name}`,
+      by: {
+        NoGyoumu_BridgeID: {
+          pure: `
+            DELETE FROM ${Table.TenkenhyoGazou.name} 
+            WHERE 
+              ${Table.TenkenhyoGazou.columns.NoGyoumu.name} = ? AND
+              ${Table.TenkenhyoGazou.columns.BridgeID.name} = ?
+          `
+        }
+      }
     },
     insert: {
-      fullColumn: ``
+      fullColumn: `
+        INSERT INTO ${Table.TenkenhyoGazou.name} (
+          ${Table.TenkenhyoGazou.columns.NoGyoumu.name},
+          ${Table.TenkenhyoGazou.columns.BridgeID.name},
+          ${Table.TenkenhyoGazou.columns.FlgTablet.name},
+          ${Table.TenkenhyoGazou.columns.GazouID.name},
+          ${Table.TenkenhyoGazou.columns.NoShashin.name},
+          ${Table.TenkenhyoGazou.columns.NameBuzai.name},
+          ${Table.TenkenhyoGazou.columns.NoBuzai.name},
+          ${Table.TenkenhyoGazou.columns.DamageShurui.name},
+          ${Table.TenkenhyoGazou.columns.Keikan.name},
+          ${Table.TenkenhyoGazou.columns.ShindanTenken.name},
+          ${Table.TenkenhyoGazou.columns.Bikou.name},
+          ${Table.TenkenhyoGazou.columns.HoushinChousa.name},
+          ${Table.TenkenhyoGazou.columns.HoushinSochi.name},
+          ${Table.TenkenhyoGazou.columns.NameFile.name},
+          ${Table.TenkenhyoGazou.columns.CodeDamageShurui.name},
+          ${Table.TenkenhyoGazou.columns.FlgDamage.name},
+          ${Table.TenkenhyoGazou.columns.FullPath.name}
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `
     },
     select: {
       all: {
-        pure: ``
+        pure: `SELECT * FROM ${Table.TenkenhyoGazou.name}`
+      },
+      FullPath: {
+        by: {
+          NoGyoumu_BridgeID_GazouID_FlgTablet: {
+            pure: `
+              SELECT ${Table.TenkenhyoGazou.columns.FullPath.name}
+              FROM ${Table.TenkenhyoGazou.name}
+              WHERE 
+                ${Table.TenkenhyoGazou.columns.NoGyoumu.name} = ? AND
+                ${Table.TenkenhyoGazou.columns.BridgeID.name} = ? AND
+                ${Table.TenkenhyoGazou.columns.GazouID.name} = ? AND
+                ${Table.TenkenhyoGazou.columns.FlgTablet.name} = ?
+            `
+          }
+        }
+      },
+      FullPath_HoushinChousa_HoushinSochi: {
+        by: {
+          NoGyoumu_BridgeID_GazouID_FlgTablet: {
+            pure: `
+              SELECT 
+                ${Table.TenkenhyoGazou.columns.FullPath.name},
+                ${Table.TenkenhyoGazou.columns.HoushinChousa.name},
+                ${Table.TenkenhyoGazou.columns.HoushinSochi.name}
+              FROM ${Table.TenkenhyoGazou.name}
+              WHERE 
+                ${Table.TenkenhyoGazou.columns.NoGyoumu.name} = ? AND
+                ${Table.TenkenhyoGazou.columns.BridgeID.name} = ? AND
+                ${Table.TenkenhyoGazou.columns.GazouID.name} = ? AND
+                ${Table.TenkenhyoGazou.columns.FlgTablet.name} = ?
+            `
+          }
+        }
+      },
+      GazouID_FullPath_NameBuzai_ShindanTenken_NameFile_Bikou: {
+        by: {
+          NoGyoumu_BridgeID_FlgTablet: {
+            with: {
+              GazouIDNoEqual0_FlgDamageEqual0: `
+                SELECT 
+                  ${Table.TenkenhyoGazou.columns.GazouID.name},
+                  ${Table.TenkenhyoGazou.columns.FullPath.name},
+                  ${Table.TenkenhyoGazou.columns.NameBuzai.name},
+                  ${Table.TenkenhyoGazou.columns.ShindanTenken.name},
+                  ${Table.TenkenhyoGazou.columns.NameFile.name},
+                  ${Table.TenkenhyoGazou.columns.Bikou.name}
+                FROM ${Table.TenkenhyoGazou.name}
+                WHERE 
+                  ${Table.TenkenhyoGazou.columns.NoGyoumu.name} = ? AND
+                  ${Table.TenkenhyoGazou.columns.BridgeID.name} = ? AND
+                  ${Table.TenkenhyoGazou.columns.FlgTablet.name} = ? AND
+                  ${Table.TenkenhyoGazou.columns.FlgDamage.name} = 0 AND
+                  ${Table.TenkenhyoGazou.columns.GazouID.name} <> 0
+              `
+            }
+          }
+        }
+      }
+    },
+    update: {
+      FullPath_HoushinChousa_HoushinSochi: {
+        by: {
+          NoGyoumu_BridgeID_FlgTablet_GazouID: {
+            pure: `
+              UPDATE 
+                ${Table.TenkenhyoGazou.name}
+              SET 
+                ${Table.TenkenhyoGazou.columns.FullPath.name} = ?,
+                ${Table.TenkenhyoGazou.columns.HoushinChousa.name} = ?,
+                ${Table.TenkenhyoGazou.columns.HoushinSochi.name} = ?
+              WHERE 
+                ${Table.TenkenhyoGazou.columns.NoGyoumu.name} = ? AND 
+                ${Table.TenkenhyoGazou.columns.BridgeID.name} = ? AND 
+                ${Table.TenkenhyoGazou.columns.FlgTablet.name} = ? AND 
+                ${Table.TenkenhyoGazou.columns.GazouID.name} = ?
+            `
+          }
+        }
+      }
+    },
+    insert_update: {
+      NoGyoumu_BridgeID_FlgTablet_GazouID_Bikou_FullPath_NameBuzai_NameFile_ShindanTenken: {
+        by: {
+          NoGyoumu_BridgeID_FlgTablet_GazouID: {
+            pure: `
+              INSERT INTO ${Table.TenkenhyoGazou.name} (
+                ${Table.TenkenhyoGazou.columns.NoGyoumu.name}, 
+                ${Table.TenkenhyoGazou.columns.BridgeID.name}, 
+                ${Table.TenkenhyoGazou.columns.FlgTablet.name}, 
+                ${Table.TenkenhyoGazou.columns.GazouID.name}, 
+                ${Table.TenkenhyoGazou.columns.Bikou.name}, 
+                ${Table.TenkenhyoGazou.columns.FullPath.name}, 
+                ${Table.TenkenhyoGazou.columns.NameBuzai.name}, 
+                ${Table.TenkenhyoGazou.columns.NameFile.name}, 
+                ${Table.TenkenhyoGazou.columns.ShindanTenken.name}
+              ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(
+                ${Table.TenkenhyoGazou.columns.NoGyoumu.name}, 
+                ${Table.TenkenhyoGazou.columns.BridgeID.name}, 
+                ${Table.TenkenhyoGazou.columns.FlgTablet.name}, 
+                ${Table.TenkenhyoGazou.columns.GazouID.name}
+              ) DO UPDATE SET
+                ${Table.TenkenhyoGazou.columns.Bikou.name} = ?, 
+                ${Table.TenkenhyoGazou.columns.FullPath.name} = ?, 
+                ${Table.TenkenhyoGazou.columns.NameBuzai.name} = ?, 
+                ${Table.TenkenhyoGazou.columns.NameFile.name} = ?, 
+                ${Table.TenkenhyoGazou.columns.ShindanTenken.name} = ?
+            `
+          }
+        }
       }
     }
   },
@@ -938,6 +1375,12 @@ const QueryString = {
       table: `DELETE FROM ${Table.TenkenhyoGazouTemp.name}`,
       by: {
         NoGyoumu_BridgeID: {
+          pure: `
+            DELETE FROM ${Table.TenkenhyoGazouTemp.name} 
+            WHERE 
+              ${Table.TenkenhyoGazouTemp.columns.NoGyoumu.name} = ? AND
+              ${Table.TenkenhyoGazouTemp.columns.BridgeID.name} = ?
+          `,
           with: {
             FlgTabletEqual1_GazouIDNoEqual0: `
               DELETE FROM ${Table.TenkenhyoGazouTemp.name} 
@@ -1034,7 +1477,17 @@ const QueryString = {
     },
     select: {
       all: {
-        pure: `SELECT * FROM ${Table.TenkenhyoGazouTemp.name}`
+        pure: `SELECT * FROM ${Table.TenkenhyoGazouTemp.name}`,
+        by: {
+          NoGyoumu_BridgeID: {
+            pure: `
+              SELECT * FROM ${Table.TenkenhyoGazouTemp.name}
+              WHERE 
+                ${Table.TenkenhyoGazouTemp.columns.NoGyoumu.name} = ? AND
+                ${Table.TenkenhyoGazouTemp.columns.BridgeID.name} = ?
+            `
+          }
+        }
       },
       GazouID_NameFile_FullPath: {
         by: {
@@ -1117,9 +1570,9 @@ const QueryString = {
       },
       ShindanTenken_NameBuzai_CodeDamageShurui_DamageShurui_Bikou: {
         by: {
-          NoGyoumu_BridgeID: {
+          NoGyoumu_BridgeID_GazouID: {
             with: {
-              FlgTabletEqual1_GazouIDNoEqual0: `
+              FlgTabletEqual1: `
                 SELECT
                   ${Table.TenkenhyoGazouTemp.columns.ShindanTenken.name},
                   ${Table.TenkenhyoGazouTemp.columns.NameBuzai.name},
@@ -1132,7 +1585,7 @@ const QueryString = {
                   ${Table.TenkenhyoGazouTemp.columns.NoGyoumu.name} = ? AND 
                   ${Table.TenkenhyoGazouTemp.columns.BridgeID.name} = ? AND 
                   ${Table.TenkenhyoGazouTemp.columns.FlgTablet.name} = 1 AND 
-                  ${Table.TenkenhyoGazouTemp.columns.GazouID.name} <> 0
+                  ${Table.TenkenhyoGazouTemp.columns.GazouID.name} = ?
               `
             }
           }
@@ -1214,6 +1667,29 @@ const QueryString = {
             }
           }
         }
+      },
+      ShindanTenken_NoBuzai_NameBuzai_CodeDamageShurui_DamageShurui_Bikou: {
+        by: {
+          NoGyoumu_BridgeID_GazouID: {
+            with: {
+              FlgTabletEqual1: `
+                UPDATE ${Table.TenkenhyoGazouTemp.name}
+                SET 
+                  ${Table.TenkenhyoGazouTemp.columns.ShindanTenken.name} = ?, 
+                  ${Table.TenkenhyoGazouTemp.columns.NoBuzai.name} = ?,
+                  ${Table.TenkenhyoGazouTemp.columns.NameBuzai.name} = ?,
+                  ${Table.TenkenhyoGazouTemp.columns.CodeDamageShurui.name} = ?,
+                  ${Table.TenkenhyoGazouTemp.columns.DamageShurui.name} = ?,
+                  ${Table.TenkenhyoGazouTemp.columns.Bikou.name} = ?
+                WHERE 
+                  ${Table.TenkenhyoGazouTemp.columns.NoGyoumu.name} = ? AND 
+                  ${Table.TenkenhyoGazouTemp.columns.BridgeID.name} = ? AND 
+                  ${Table.TenkenhyoGazouTemp.columns.FlgTablet.name} = 1 AND 
+                  ${Table.TenkenhyoGazouTemp.columns.GazouID.name} = ?
+              `
+            }
+          }
+        }
       }
     }
   },
@@ -1235,11 +1711,38 @@ const QueryString = {
       table: `DELETE FROM ${Table.TenkenhyoGenkyou.name}`
     },
     insert: {
-      fullColumn: ``
+      fullColumn: `
+        INSERT INTO ${Table.TenkenhyoGenkyou.name} (
+          ${Table.TenkenhyoGenkyou.columns.NoGyoumu.name},
+          ${Table.TenkenhyoGenkyou.columns.BridgeID.name},
+          ${Table.TenkenhyoGenkyou.columns.FlgTablet.name},
+          ${Table.TenkenhyoGenkyou.columns.CodeGenkyouShurui.name},
+          ${Table.TenkenhyoGenkyou.columns.NameFile.name},
+          ${Table.TenkenhyoGenkyou.columns.FullPath.name}
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `
     },
     select: {
       all: {
         pure: ``
+      },
+      FlgTablet_CodeGenkyouShurui_NameFile_FullPath: {
+        by: {
+          NoGyoumu_BridgeID: {
+            pure: `
+              SELECT 
+                ${Table.TenkenhyoGenkyou.columns.FlgTablet.name},
+                ${Table.TenkenhyoGenkyou.columns.CodeGenkyouShurui.name},
+                ${Table.TenkenhyoGenkyou.columns.NameFile.name},
+                ${Table.TenkenhyoGenkyou.columns.FullPath.name}
+              FROM 
+                ${Table.TenkenhyoGenkyou.name}
+              WHERE 
+                ${Table.TenkenhyoGenkyou.columns.NoGyoumu.name} = ? AND
+                ${Table.TenkenhyoGenkyou.columns.BridgeID.name} = ?
+            `
+          }
+        }
       }
     }
   },
@@ -1312,11 +1815,32 @@ const QueryString = {
       table: `DELETE FROM ${Table.MGenkyouShurui.name}`
     },
     insert: {
-      fullColumn: ``
+      fullColumn: ``,
+      withNoGyoumuAutoIncrement: `
+        INSERT INTO ${Table.MGenkyouShurui.name} (
+          ${Table.MGenkyouShurui.columns.CodeGenkyouShurui.name}, 
+          ${Table.MGenkyouShurui.columns.NameGenkyouShurui.name}
+        ) VALUES (?, ?)
+      `
     },
     select: {
       all: {
         pure: ``
+      },
+      CodeGenkyouShurui_NameGenkyouShurui: {
+        orderBy: {
+          CodeGenkyouShurui: {
+            pure: `
+              SELECT 
+                ${Table.MGenkyouShurui.columns.CodeGenkyouShurui.name},
+                ${Table.MGenkyouShurui.columns.NameGenkyouShurui.name}
+              FROM 
+                ${Table.MGenkyouShurui.name}
+              ORDER BY
+                ${Table.MGenkyouShurui.columns.CodeGenkyouShurui.name}
+            `
+          }
+        }
       }
     }
   },
@@ -1381,6 +1905,22 @@ const QueryString = {
           FROM
             ${Table.MTenkenShokenTemplate.name}
         `
+      },
+      Shoken: {
+        by: {
+          CodeBuzaiZairyou_CodeDamageShurui_CodeShindan: {
+            pure: `
+              SELECT 
+                ${Table.MTenkenShokenTemplate.columns.Shoken.name}
+              FROM
+                ${Table.MTenkenShokenTemplate.name}
+              WHERE
+                ${Table.MTenkenShokenTemplate.columns.CodeBuzaiZairyou.name} IN (?, 0) AND
+                ${Table.MTenkenShokenTemplate.columns.CodeDamageShurui.name} IN (?, 0) AND
+                ${Table.MTenkenShokenTemplate.columns.CodeShindan.name} = ?
+            `
+          }
+        }
       }
     }
   },
@@ -1478,11 +2018,11 @@ const QueryString = {
       table: `DELETE FROM ${Table.MBuzaiTenkenhyo.name}`
     },
     insert: {
-      fullColumn: ``
+      fullColumn: `INSERT INTO ${Table.MBuzaiTenkenhyo.name} VALUES (?, ?)`
     },
     select: {
       all: {
-        pure: ``
+        pure: `SELECT * FROM ${Table.MBuzaiTenkenhyo.name}`
       }
     }
   },
@@ -1495,49 +2035,179 @@ const QueryString = {
   select: {
     CodeBridge_BridgeID_NameShisetsu_IdoStartTenken_KeidoStartTenken_FlgCalvert_CodeShindan_NameShindan: {
       by: {
-        NoGyoumu: `
-          SELECT 
-            T1.${Table.Bridge.columns.CodeBridge.name}, 
-            T1.${Table.Bridge.columns.BridgeID.name}, 
+        NoGyoumu: {
+          pure: `
+          SELECT
+            T1.${Table.Bridge.columns.CodeBridge.name},
+            T1.${Table.Bridge.columns.BridgeID.name},
             T1.${Table.Bridge.columns.NameShisetsu.name},
-            T1.${Table.Bridge.columns.IdoStartTenken.name},
-            T1.${Table.Bridge.columns.KeidoStartTenken.name},
+            T2.${Table.TenkenRireki.columns.IdoStartTenken.name},
+            T2.${Table.TenkenRireki.columns.KeidoStartTenken.name},
             T1.${Table.Bridge.columns.FlgCalvert.name},
             T2.${Table.TenkenRireki.columns.FlgTablet.name},
             T3.${Table.MShindan.columns.CodeShindan.name},
             T3.${Table.MShindan.columns.NameShindan.name}
-          FROM 
-            ${Table.Bridge.name} AS T1 INNER JOIN 
-            ${Table.TenkenRireki.name} AS T2 INNER JOIN
-            ${Table.MShindan.name} AS T3
-          ON 
-            T1.${Table.Bridge.columns.NoGyoumu.name} = T2.${Table.TenkenRireki.columns.NoGyoumu.name} AND
-            T1.${Table.Bridge.columns.BridgeID.name} = T2.${Table.TenkenRireki.columns.BridgeID.name} AND
-            T2.${Table.TenkenRireki.columns.ShindanTenken.name} = T3.${Table.MShindan.columns.CodeShindan.name}
-          WHERE 
+          FROM
+            (${Table.Bridge.name} AS T1 LEFT JOIN
+            ${Table.TenkenRireki.name} AS T2 ON
+              T1.${Table.Bridge.columns.NoGyoumu.name} = T2.${Table.TenkenRireki.columns.NoGyoumu.name} AND
+              T1.${Table.Bridge.columns.BridgeID.name} = T2.${Table.TenkenRireki.columns.BridgeID.name}) LEFT JOIN
+            ${Table.MShindan.name} AS T3 ON
+              T2.${Table.TenkenRireki.columns.ShindanTenken.name} = T3.${Table.MShindan.columns.CodeShindan.name}
+          WHERE
             T1.${Table.Bridge.columns.NoGyoumu.name} = ?
         `
+        }
       }
     },
     NameShisetsuTenken_NameRosen_NameSoshiki_NameTenkensha_NengappiTenken: {
       by: {
-        NoGyoumu_BridgeID: `
-          SELECT 
-            T2.${Table.TenkenRirekiTemp.columns.NameShisetsuTenken.name},
-            T1.${Table.Bridge.columns.NameRosen.name},
-            T1.${Table.Bridge.columns.NameSoshiki.name},
-            T2.${Table.TenkenRirekiTemp.columns.NameTenkensha.name},
-            T2.${Table.TenkenRirekiTemp.columns.NengappiTenken.name}
-          FROM 
-            ${Table.Bridge.name} AS T1 LEFT JOIN 
-            ${Table.TenkenRirekiTemp.name} AS T2
-          ON 
-            T1.${Table.Bridge.columns.NoGyoumu.name} = T2.${Table.TenkenRirekiTemp.columns.NoGyoumu.name} AND 
-            T1.${Table.Bridge.columns.BridgeID.name} = T2.${Table.TenkenRirekiTemp.columns.BridgeID.name}
-          WHERE 
-            T1.${Table.Bridge.columns.NoGyoumu.name} = ? AND
-            T1.${Table.Bridge.columns.BridgeID.name} = ?
-        `
+        NoGyoumu_BridgeID: {
+          pure: `
+            SELECT 
+              T2.${Table.TenkenRirekiTemp.columns.NameShisetsuTenken.name},
+              T1.${Table.Bridge.columns.NameRosen.name},
+              T1.${Table.Bridge.columns.NameSoshiki.name},
+              T2.${Table.TenkenRirekiTemp.columns.NameTenkensha.name},
+              T2.${Table.TenkenRirekiTemp.columns.NengappiTenken.name}
+            FROM 
+              ${Table.Bridge.name} AS T1 LEFT JOIN 
+              ${Table.TenkenRirekiTemp.name} AS T2
+            ON 
+              T1.${Table.Bridge.columns.NoGyoumu.name} = T2.${Table.TenkenRirekiTemp.columns.NoGyoumu.name} AND 
+              T1.${Table.Bridge.columns.BridgeID.name} = T2.${Table.TenkenRirekiTemp.columns.BridgeID.name}
+            WHERE 
+              T1.${Table.Bridge.columns.NoGyoumu.name} = ? AND
+              T1.${Table.Bridge.columns.BridgeID.name} = ?
+          `
+        }
+      }
+    },
+    NameShisetsuTenken_NameRosen_IdoStartTenken_KeidoStartTenken_BridgeIDTenken_Shozaichi1Ji_NameSoshiki_NengappiTenken: {
+      by: {
+        NoGyoumu_BridgeID: {
+          pure: `
+            SELECT 
+              T2.${Table.TenkenRireki.columns.NameShisetsuTenken.name},
+              T1.${Table.Bridge.columns.NameRosen.name},
+              T2.${Table.TenkenRireki.columns.IdoStartTenken.name},
+              T2.${Table.TenkenRireki.columns.KeidoStartTenken.name},
+              T1.${Table.Bridge.columns.BridgeIDTenken.name},
+              T1.${Table.Bridge.columns.Shozaichi1Ji.name},
+              T1.${Table.Bridge.columns.NameSoshiki.name},
+              T2.${Table.TenkenRireki.columns.NengappiTenken.name}
+            FROM 
+              ${Table.Bridge.name} AS T1 LEFT JOIN 
+              ${Table.TenkenRireki.name} AS T2
+            ON 
+              T1.${Table.Bridge.columns.NoGyoumu.name} = T2.${Table.TenkenRireki.columns.NoGyoumu.name} AND 
+              T1.${Table.Bridge.columns.BridgeID.name} = T2.${Table.TenkenRireki.columns.BridgeID.name}
+            WHERE 
+              T1.${Table.Bridge.columns.NoGyoumu.name} = ? AND
+              T1.${Table.Bridge.columns.BridgeID.name} = ?
+          `,
+          with: {
+            FlgTabletEqual1: `
+              SELECT 
+                T2.${Table.TenkenRireki.columns.NameShisetsuTenken.name},
+                T1.${Table.Bridge.columns.NameRosen.name},
+                T2.${Table.TenkenRireki.columns.IdoStartTenken.name},
+                T2.${Table.TenkenRireki.columns.KeidoStartTenken.name},
+                T1.${Table.Bridge.columns.BridgeIDTenken.name},
+                T1.${Table.Bridge.columns.Shozaichi1Ji.name},
+                T1.${Table.Bridge.columns.NameSoshiki.name},
+                T2.${Table.TenkenRireki.columns.NengappiTenken.name}
+              FROM 
+                ${Table.TenkenRireki.name} AS T2 LEFT JOIN 
+                ${Table.Bridge.name} AS T1 
+              ON 
+                T1.${Table.Bridge.columns.NoGyoumu.name} = T2.${Table.TenkenRireki.columns.NoGyoumu.name} AND 
+                T1.${Table.Bridge.columns.BridgeID.name} = T2.${Table.TenkenRireki.columns.BridgeID.name}
+              WHERE 
+                T1.${Table.Bridge.columns.NoGyoumu.name} = ? AND
+                T1.${Table.Bridge.columns.BridgeID.name} = ? AND
+                T2.${Table.TenkenRireki.columns.FlgTablet.name} = 1
+            `
+          }
+        }
+      }
+    },
+    TableTenkenhyoGazouTemp_NameDamageShurui: {
+      by: {
+        NoGyoumu_BridgeID: {
+          pure: `
+            SELECT 
+              T1.*, T2.${Table.MDamageShurui.columns.NameDamageShurui.name}
+            FROM 
+              ${Table.TenkenhyoGazouTemp.name} AS T1 LEFT JOIN
+              ${Table.MDamageShurui.name} AS T2
+            ON 
+              T1.${Table.TenkenhyoGazouTemp.columns.CodeDamageShurui.name} = T2.${Table.MDamageShurui.columns.CodeDamageShurui.name}
+            WHERE 
+              T1.${Table.TenkenhyoGazouTemp.columns.NoGyoumu.name} = ? AND
+              T1.${Table.TenkenhyoGazouTemp.columns.BridgeID.name} = ?
+          `
+        }
+      }
+    },
+    NameTenkensha_ShindanTenken_CodeHenjouTenken_BikouTenken_ShindanSochigo_CodeHenjouSochigo_NengappiSaihentei: {
+      by: {
+        NoGyoumu_BridgeID: {
+          with: {
+            FlgTabletEqual1: `
+              SELECT 
+                T1.${Table.TenkenRireki.columns.NameTenkensha.name},
+                T2.${Table.BuzaiHyouka.columns.ShindanTenken.name},
+                T2.${Table.BuzaiHyouka.columns.CodeHenjouTenken.name},
+                T2.${Table.BuzaiHyouka.columns.BikouTenken.name},
+                T2.${Table.BuzaiHyouka.columns.ShindanSochigo.name},
+                T2.${Table.BuzaiHyouka.columns.CodeHenjouSochigo.name},
+                T2.${Table.BuzaiHyouka.columns.NengappiSaihantei.name}
+              FROM 
+                ${Table.TenkenRireki.name} AS T1 LEFT JOIN 
+                ${Table.BuzaiHyouka.name} AS T2 
+              ON 
+                T1.${Table.TenkenRireki.columns.NoGyoumu.name} = T2.${Table.BuzaiHyouka.columns.NoGyoumu.name} AND 
+                T1.${Table.TenkenRireki.columns.BridgeID.name} = T2.${Table.BuzaiHyouka.columns.BridgeID.name}
+              WHERE
+                T1.${Table.TenkenRireki.columns.NoGyoumu.name} = ? AND 
+                T1.${Table.TenkenRireki.columns.BridgeID.name} = ? AND
+                T1.${Table.TenkenRireki.columns.FlgTablet.name} = 1
+            `
+          }
+        }
+      }
+    },
+    ShindanTenken_Shoken_HoushinSochi_NenKasetsu_BridgeLength_WidthZen_BridgeKeishiki: {
+      by: {
+        NoGyoumu_BridgeID: {
+          with: {
+            FlgTabletEqual1: `
+              SELECT 
+                T1.${Table.TenkenRireki.columns.ShindanTenken.name},
+                T1.${Table.TenkenRireki.columns.Shoken.name},
+                T2.${Table.TenkenhyoGazou.columns.HoushinChousa.name},
+                T2.${Table.TenkenhyoGazou.columns.HoushinSochi.name},
+                T3.${Table.Bridge.columns.NenKasetsu.name},
+                T3.${Table.Bridge.columns.BridgeLength.name},
+                T3.${Table.Bridge.columns.WidthZen.name},
+                T3.${Table.Bridge.columns.BridgeKeishiki.name}
+              FROM 
+                ${Table.TenkenRireki.name} AS T1 LEFT JOIN 
+                ${Table.TenkenhyoGazou.name} AS T2 LEFT JOIN
+                ${Table.Bridge.name} AS T3
+              ON 
+                T1.${Table.TenkenRireki.columns.NoGyoumu.name} = T3.${Table.Bridge.columns.NoGyoumu.name} AND 
+                T1.${Table.TenkenRireki.columns.BridgeID.name} = T3.${Table.Bridge.columns.BridgeID.name} AND
+                T1.${Table.TenkenRireki.columns.NoGyoumu.name} = T2.${Table.TenkenhyoGazou.columns.NoGyoumu.name} AND 
+                T1.${Table.TenkenRireki.columns.BridgeID.name} = T2.${Table.TenkenhyoGazou.columns.BridgeID.name}
+              WHERE
+                T1.${Table.TenkenRireki.columns.NoGyoumu.name} = ? AND 
+                T1.${Table.TenkenRireki.columns.BridgeID.name} = ? AND
+                T1.${Table.TenkenRireki.columns.FlgTablet.name} = 1
+            `
+          }
+        }
       }
     }
   }

@@ -1,5 +1,5 @@
-import React, { useReducer, useEffect } from 'react'
-import { String, Images, DummyData, SQLite } from '../../constants'
+import React, { useReducer, useEffect, useRef } from 'react'
+import { String, Images, DummyData, SQLite, NamePages } from '../../constants'
 import { convertDate } from './../../utils/commons'
 import { useMutation, useQuery } from './../../utils/hooks'
 import { MainContent, ImageInstance } from './elements'
@@ -26,132 +26,19 @@ import {
   getDateNowString,
   getBase64FromImage,
   getImageFromBase64,
-  getUUID
+  getUUID,
+  groupArrayOfObjects,
+  convertObjectToArrayKeyValue
 } from './../../utils/commons'
+import { reducer } from './reducer'
 
 // constants
-const IMAGE_SPACE_BETWEEN = '10vw'
-const TITLE_MARGIN_LEFT = '10vw'
+const IMAGE_SPACE_BETWEEN = '8vw'
+const TITLE_MARGIN_LEFT = '8vw'
 const IMAGE_WIDTH_CONTAINER = `calc(100% - 3*${TITLE_MARGIN_LEFT})`
 
-// reducer
-const reducer = (state, action) => {
-  switch (action.type) {
-    case 'SET_GROUP_HEADER':
-      return {
-        ...state,
-        lblKyouryoumei: action.payload.lblKyouryoumei || state.lblKyouryoumei,
-        lblRosenmei: action.payload.lblRosenmei || state.lblRosenmei,
-        lblKanrishamei: action.payload.lblKanrishamei || state.lblKanrishamei,
-        lblHeader: action.payload.lblHeader || state.lblHeader,
-        selectedDate: action.payload.selectedDate || state.lblHeader
-      }
-    case 'SET_IMG_ZENKEI_SHASHIN':
-      return {
-        ...state,
-        imgZenkeiShashinLeft:
-          action.payload.imgZenkeiShashinLeft || state.imgZenkeiShashinLeft,
-        imgZenkeiShashinRight:
-          action.payload.imgZenkeiShashinRight || state.imgZenkeiShashinRight
-      }
-    case 'SET_IMG_SONSHOU_SHASHIN':
-      return {
-        ...state,
-        imgListSonshouShashinLeft: action.payload.imgListSonshouShashinLeft
-          ? Array.isArray(action.payload.imgListSonshouShashinLeft)
-            ? action.payload.imgListSonshouShashinLeft
-            : state.imgListSonshouShashinLeft
-          : state.imgListSonshouShashinLeft,
-        imgListSonshouShashinRight: action.payload.imgListSonshouShashinRight
-          ? Array.isArray(action.payload.imgListSonshouShashinRight)
-            ? action.payload.imgListSonshouShashinRight
-            : state.imgListSonshouShashinRight
-          : state.imgListSonshouShashinRight
-      }
-
-    //==================================================
-    case 'SHOW_DATE_PICKER_POPUP':
-      return {
-        ...state,
-        showDatePickerPopup: true
-      }
-    case 'HIDE_DATE_PICKER_POPUP':
-      return {
-        ...state,
-        showDatePickerPopup: false
-      }
-    case 'SHOW_ZENKEI_SHASHIN_POPUP':
-      return {
-        ...state,
-        showZenkeiShashinPopup: true
-      }
-    case 'HIDE_ZENKEI_SHASHIN_POPUP':
-      return {
-        ...state,
-        showZenkeiShashinPopup: false
-      }
-    case 'SHOW_SENTAKU_POPUP':
-      return {
-        ...state,
-        showSentakuPopup: true
-      }
-    case 'HIDE_SENTAKU_POPUP':
-      return {
-        ...state,
-        showSentakuPopup: false
-      }
-    case 'SHOW_PHOTO_POPUP':
-      return {
-        ...state,
-        showPhotoPopup: true,
-        imagePopupSrc: action.payload
-      }
-    case 'HIDE_PHOTO_POPUP':
-      return {
-        ...state,
-        showPhotoPopup: false,
-        imagePopupSrc: null
-      }
-    case 'SET_SELECTED_DATE':
-      return {
-        ...state,
-        selectedDate: action.payload
-      }
-    case 'SHOW_PHOTO_TYPE_SELECTION_POPUP':
-      return {
-        ...state,
-        isAutoStoreImage: !!action.payload,
-        showPhotoTypeSelectionPopup: true
-      }
-    case 'HIDE_PHOTO_TYPE_SELECTION_POPUP':
-      return {
-        ...state,
-        showPhotoTypeSelectionPopup: false
-      }
-    case 'SHOW_SON_SHOU_SHANHIN_POPUP':
-      return {
-        ...state,
-        showSonshouShanhinPopup: true,
-        gazouIDSelected: action.payload
-      }
-    case 'HIDE_SON_SHOU_SHANHIN_POPUP':
-      return {
-        ...state,
-        showSonshouShanhinPopup: false,
-        gazouIDSelected: null
-      }
-    case 'SET_TMP_BASE_64_IMAGE':
-      return {
-        ...state,
-        tmpBase64Image: action.payload
-      }
-    default:
-      return state
-  }
-}
-
 // main
-const Shashinchou = () => {
+const Shashinchou = ({ NO_GYOUMU, BRIDGE_ID }) => {
   // state
   const [state, dispatch] = useReducer(reducer, {
     // GROUP_HEADER
@@ -183,25 +70,19 @@ const Shashinchou = () => {
 
   // constants
   const photoZenkeiShashinRight = usePhotoGallery()
-  const location = useLocation()
-  const { NO_GYOUMU, BRIDGE_ID } = location.state
+  const history = useHistory()
+  let refListCheckBox = useRef({})
 
   const storeImageZenkeiShashinRight = base64image => {
     if (!base64image) {
       return
     }
 
-    state.imgZenkeiShashinRight
-      ? mutationUpdateZenkeiShashinRight.execute([
-          base64image,
-          NO_GYOUMU,
-          BRIDGE_ID
-        ])
-      : mutationInsertZenkeiShashinRight.execute([
-          NO_GYOUMU,
-          BRIDGE_ID,
-          base64image
-        ])
+    mutationUpdateZenkeiShashinRight.execute([
+      base64image,
+      NO_GYOUMU,
+      BRIDGE_ID
+    ])
 
     dispatch({ type: 'SET_TMP_BASE_64_IMAGE', payload: null })
   }
@@ -213,13 +94,187 @@ const Shashinchou = () => {
       getUUID()
     ])
   }
+  const gazouFormatter = gazou => {
+    return gazou.map((item, index) => ({
+      ...item,
+      FLG_DAMAGE: refListCheckBox.current[item.GAZOU_ID]
+        ? refListCheckBox.current[item.GAZOU_ID].checked
+          ? 1
+          : 0
+        : item.FLG_DAMAGE,
+      CODE_DAMAGE_SHURUI: item.CODE_DAMAGE_SHURUI || 0,
+      NO_BUZAI: item.NO_BUZAI || 0,
+      SHINDAN_TENKEN: item.SHINDAN_TENKEN || 0,
+      NO_SHASHIN: index
+    }))
+  }
+  const gazouFilteredByFlgCalvert = (gazou, flgCalvert) => {
+    const gazouFilteredByFlgTabletAndFlgDamage = gazou.filter(
+      item => item.FLG_TABLET === 1 && item.FLG_DAMAGE === 0
+    )
+    const gazouGrouped = groupArrayOfObjects(
+      gazouFilteredByFlgTabletAndFlgDamage,
+      'NO_BUZAI'
+    )
+    const gazouFilteredByFlgCalvert =
+      flgCalvert === 0
+        ? {
+            '1': [...(gazouGrouped['1'] || [])],
+            '2': [...(gazouGrouped['2'] || [])],
+            '3': [...(gazouGrouped['3'] || [])],
+            '4': [...(gazouGrouped['4'] || [])],
+            '5': [...(gazouGrouped['5'] || [])],
+            '99': [...(gazouGrouped['99'] || [])]
+          }
+        : {
+            '11': [...(gazouGrouped['11'] || [])],
+            '12': [...(gazouGrouped['12'] || [])],
+            '13': [...(gazouGrouped['13'] || [])],
+            '14': [...(gazouGrouped['14'] || [])],
+            '15': [...(gazouGrouped['15'] || [])]
+          }
+    return gazouFilteredByFlgCalvert
+  }
+  const buzaiHyoukaFromGazou = gazou => {
+    return gazou.map(item => ({
+      NO_BUZAI: Number(item[0]),
+      SHINDAN_TENKEN: item[1].reduce(
+        (prev, curr) =>
+          prev === null
+            ? curr.SHINDAN_TENKEN > 1
+              ? curr.SHINDAN_TENKEN
+              : prev
+            : curr.SHINDAN_TENKEN > prev
+            ? curr.SHINDAN_TENKEN
+            : prev,
+        null
+      ),
+      CODE_HENJOU_TENKEN: item[1]
+        .filter(
+          item => item.DAMAGE_SHURUI?.length || item.NAME_DAMAGE_SHURUI?.length
+        )
+        .map(item =>
+          item.DAMAGE_SHURUI?.length
+            ? String.sonohoka + ' (' + item.DAMAGE_SHURUI + ')'
+            : item.NAME_DAMAGE_SHURUI
+        )
+        .toString()
+        .replaceAll(',', String.comma),
+      BIKOU_TENKEN: item[1]
+        .map(item => String.shashin + item.NO_SHASHIN)
+        .toString()
+        .replaceAll(',', String.comma)
+    }))
+  }
+  const tranformDataFromTempToOfficial = flgCalvert => {
+    Promise.all([
+      mutationUpdateFlgCalvertBridge.execute([
+        flgCalvert,
+        NO_GYOUMU,
+        BRIDGE_ID
+      ]),
+      mutationSelectTenkenhyoGazouTempByNoGyoumuAndBridgeID.execute([
+        NO_GYOUMU,
+        BRIDGE_ID
+      ]),
+      mutationSelectTenkenRirekiTempByNoGyoumuAndBridgeID.execute([
+        NO_GYOUMU,
+        BRIDGE_ID
+      ]),
+      mutationDeleteTenkenhyoGazouByNoGyoumuAndBridgeID.execute([
+        NO_GYOUMU,
+        BRIDGE_ID
+      ]),
+      mutationDeleteTenkenRirekiByNoGyoumuAndBridgeIDAndFlgTabletEqual1.execute(
+        [NO_GYOUMU, BRIDGE_ID]
+      ),
+      mutationDeleteBuzaiHyouka.execute([NO_GYOUMU, BRIDGE_ID])
+    ]).then(data => {
+      const gazouRoot = gazouFormatter(data[1])
+
+      const gazouFiltered = gazouFilteredByFlgCalvert(gazouRoot, flgCalvert)
+      const gazouReduce = convertObjectToArrayKeyValue(gazouFiltered).filter(
+        item => item[1].length
+      )
+
+      const buzaiHyouka = buzaiHyoukaFromGazou(gazouReduce)
+      const maxShindanBuzaiHyouka = Math.max(
+        ...buzaiHyouka.map(item => item.SHINDAN_TENKEN)
+      )
+      const tTenkenRirekiTemp = {
+        ...data[2]?.[0],
+        FLG_TABLET: 1,
+        SHINDAN_TENKEN: maxShindanBuzaiHyouka
+      }
+
+      Promise.all([
+        gazouRoot.map(gazou =>
+          mutationInsertTenkenhyoGazouFullColumn.execute([
+            NO_GYOUMU,
+            BRIDGE_ID,
+            gazou.FLG_TABLET,
+            gazou.GAZOU_ID,
+            gazou.NO_SHASHIN,
+            gazou.NAME_BUZAI,
+            gazou.NO_BUZAI,
+            gazou.DAMAGE_SHURUI,
+            gazou.KEIKAN,
+            gazou.SHINDAN_TENKEN,
+            gazou.BIKOU,
+            gazou.HOUSHIN_CHOUSA,
+            gazou.HOUSHIN_SOCHI,
+            gazou.NAME_FILE,
+            gazou.CODE_DAMAGE_SHURUI,
+            gazou.FLG_DAMAGE,
+            gazou.FULL_PATH
+          ])
+        ),
+        mutationInsertTenkenRirekiFullColumn.execute([
+          NO_GYOUMU,
+          BRIDGE_ID,
+          tTenkenRirekiTemp.NENGAPPI_TENKEN,
+          tTenkenRirekiTemp.NAME_TENKENSHA,
+          tTenkenRirekiTemp.SHINDAN_TENKEN,
+          tTenkenRirekiTemp.SHOKEN,
+          tTenkenRirekiTemp.NAME_SHISETSU_TENKEN,
+          tTenkenRirekiTemp.NAME_SHISETSU_KANA_TENKEN,
+          tTenkenRirekiTemp.IDO_START_TENKEN,
+          tTenkenRirekiTemp.KEIDO_START_TENKEN,
+          tTenkenRirekiTemp.NENGAPPI_KOUSHIN,
+          tTenkenRirekiTemp.FLG_TABLET,
+          tTenkenRirekiTemp.BIKOU
+        ]),
+        buzaiHyouka.map(item =>
+          mutationInsertBuzaiHyouka.execute([
+            NO_GYOUMU,
+            BRIDGE_ID,
+            1,
+            item.NO_BUZAI,
+            item.SHINDAN_TENKEN,
+            item.CODE_HENJOU_TENKEN,
+            item.BIKOU_TENKEN
+          ])
+        )
+      ]).then(() => {
+        history.replace(
+          flgCalvert === 0
+            ? NamePages.MenuRouterTypeFlagCalvert1
+            : NamePages.MenuRouterTypeFlagCalvert2,
+          {
+            NO_GYOUMU,
+            BRIDGE_ID
+          }
+        )
+      })
+    })
+  }
 
   // query - mutation
   const queryHeader = useQuery({
     queryString:
       SQLite.QueryString.select
         .NameShisetsuTenken_NameRosen_NameSoshiki_NameTenkensha_NengappiTenken
-        .by.NoGyoumu_BridgeID,
+        .by.NoGyoumu_BridgeID.pure,
     params: [NO_GYOUMU, BRIDGE_ID],
     onSuccess: data => {
       if (!data.length) {
@@ -328,6 +383,16 @@ const Shashinchou = () => {
     queryString:
       SQLite.QueryString.TenkenRirekiTemp.select.all.by.NoGyoumu_BridgeID.pure
   })
+  const mutationSelectTenkenRirekiAll = useMutation({
+    queryString: SQLite.QueryString.TenkenRireki.select.all.pure
+  })
+  const mutationDeleteTenkenRirekiByNoGyoumuAndBridgeIDAndFlgTabletEqual1 = useMutation(
+    {
+      queryString:
+        SQLite.QueryString.TenkenRireki.delete.by.NoGyoumu_BridgeID.with
+          .FlgTabletEqual1
+    }
+  )
   const mutationInsertNengappiTenken = useMutation({
     queryString:
       SQLite.QueryString.TenkenRirekiTemp.insert
@@ -366,6 +431,39 @@ const Shashinchou = () => {
     onSuccess: () => {
       querySonshouShashinRightListFullPath.reExecute()
     }
+  })
+  const mutationUpdateFlgCalvertBridge = useMutation({
+    queryString:
+      SQLite.QueryString.Bridge.update.FlgCalvert.by.NoGyoumu_BridgeID.pure
+  })
+  const mutationSelectTenkenhyoGazouTempByNoGyoumuAndBridgeID = useMutation({
+    queryString:
+      SQLite.QueryString.select.TableTenkenhyoGazouTemp_NameDamageShurui.by
+        .NoGyoumu_BridgeID.pure
+  })
+  const mutationInsertTenkenhyoGazouFullColumn = useMutation({
+    queryString: SQLite.QueryString.TenkenhyoGazou.insert.fullColumn
+  })
+  const mutationDeleteTenkenhyoGazouByNoGyoumuAndBridgeID = useMutation({
+    queryString:
+      SQLite.QueryString.TenkenhyoGazou.delete.by.NoGyoumu_BridgeID.pure
+  })
+  const mutationInsertTenkenRirekiFullColumn = useMutation({
+    queryString: SQLite.QueryString.TenkenRireki.insert.fullColumn
+  })
+  const mutationDeleteBuzaiHyouka = useMutation({
+    queryString:
+      SQLite.QueryString.BuzaiHyouka.delete.by.NoGyoumu_BridgeID.with
+        .FlgTabletEqual1
+  })
+  const mutationInsertBuzaiHyouka = useMutation({
+    queryString:
+      SQLite.QueryString.BuzaiHyouka.insert
+        .NoGyoumu_BridgeID_FlgTablet_NoBuzai_ShindanTenken_CodeHenjouTenken_BikouTenken
+        .pure
+  })
+  const mutationSelectBuzaiHyouka = useMutation({
+    queryString: SQLite.QueryString.BuzaiHyouka.select.all.pure
   })
 
   // handles
@@ -411,27 +509,6 @@ const Shashinchou = () => {
     dispatch({ type: 'HIDE_SON_SHOU_SHANHIN_POPUP' })
   }
   const handleOnSuccessPhotoZenkeiShashinRight = photo => {
-    mutationSelectTenkenRirekiTempByNoGyoumuAndBridgeID
-      .execute([NO_GYOUMU, BRIDGE_ID])
-      .then(data => {
-        if (data.length) {
-          mutationUpdateNengappiTenken.execute([
-            state.selectedDate.replace(/-/gi, ''),
-            NO_GYOUMU,
-            BRIDGE_ID
-          ])
-
-          return
-        }
-
-        mutationInsertNengappiTenken.execute([
-          NO_GYOUMU,
-          BRIDGE_ID,
-          state.selectedDate.replace(/-/gi, '')
-        ])
-      })
-
-    //=====================================
     const { imageUrl } = photo
     getBase64FromImage(imageUrl, base64image => {
       if (!state.isAutoStoreImage) {
@@ -444,31 +521,20 @@ const Shashinchou = () => {
     })
   }
   const handleOnSuccessPhotoSonshouShashinRight = photo => {
-    mutationSelectTenkenRirekiTempByNoGyoumuAndBridgeID
-      .execute([NO_GYOUMU, BRIDGE_ID])
-      .then(data => {
-        if (data.length) {
-          mutationUpdateNengappiTenken.execute([
-            state.selectedDate.replace(/-/gi, ''),
-            NO_GYOUMU,
-            BRIDGE_ID
-          ])
-
-          return
-        }
-
-        mutationInsertNengappiTenken.execute([
-          NO_GYOUMU,
-          BRIDGE_ID,
-          state.selectedDate.replace(/-/gi, '')
-        ])
-      })
-
-    //=====================================
     const { imageUrl } = photo
     getBase64FromImage(imageUrl, base64image => {
       storeImageSonshouShanhinRight(base64image)
     })
+  }
+  const handleYoushikiSakusei = () => {
+    mutationUpdateNengappiTenken
+      .execute([state.selectedDate.replace(/-/gi, ''), NO_GYOUMU, BRIDGE_ID])
+      .then(() => tranformDataFromTempToOfficial(0))
+  }
+  const handleYoushikiSakuseiMizohashi = () => {
+    mutationUpdateNengappiTenken
+      .execute([state.selectedDate.replace(/-/gi, ''), NO_GYOUMU, BRIDGE_ID])
+      .then(() => tranformDataFromTempToOfficial(1))
   }
 
   // effects
@@ -527,8 +593,6 @@ const Shashinchou = () => {
       {/*========================================================================= */}
 
       <Styled.Container>
-        <HeaderBarType1 title={String.shashinchou} />
-
         <MainContent>
           <Styled.ContentCol style={{ gap: 'var(--gap-2)' }}>
             <Styled.Table>
@@ -601,11 +665,15 @@ const Shashinchou = () => {
                   />
                 </Styled.ContentRow>
                 <Styled.ContentRow>
-                  <ButtonType1 title={String.youshiki_sakusei} />
+                  <ButtonType1
+                    title={String.youshiki_sakusei}
+                    onClick={handleYoushikiSakusei}
+                  />
                   <ButtonType1
                     title={
                       String.youshiki_sakusei + '(' + String.mizohashi + ')'
                     }
+                    onClick={handleYoushikiSakuseiMizohashi}
                   />
                 </Styled.ContentRow>
               </Styled.ContentRow>
@@ -689,7 +757,12 @@ const Shashinchou = () => {
                         gap: `calc(${IMAGE_SPACE_BETWEEN} / 2.5)`
                       }}
                     >
-                      <InputCheckBox style={{ justifySelf: 'center' }} />
+                      <InputCheckBox
+                        style={{ justifySelf: 'center' }}
+                        ref={element =>
+                          (refListCheckBox.current[item.GAZOU_ID] = element)
+                        }
+                      />
 
                       <Styled.ContentRow
                         style={{

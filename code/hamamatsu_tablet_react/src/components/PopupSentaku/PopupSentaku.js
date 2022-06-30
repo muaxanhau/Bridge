@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer } from 'react'
+import React, { useRef, useReducer, useEffect } from 'react'
 import { Container } from './elements'
 import { closeCircleSharp } from 'ionicons/icons'
 import { String, SQLite } from './../../constants'
@@ -10,7 +10,7 @@ import ButtonType1 from './../ButtonType1/ButtonType1'
 import InputSelection from '../InputSelection/InputSelection'
 import InputTextArea from './../InputTextArea/InputTextArea'
 import InputText from '../InputText/InputText'
-import { useQuery } from '../../utils/hooks'
+import { useMutation, useQuery } from '../../utils/hooks'
 import { useForm } from 'react-hook-form'
 
 // constants
@@ -19,15 +19,6 @@ const TEXT_COLOR = 'var(--color-6)'
 // reducer
 const reducer = (state, action) => {
   switch (action.type) {
-    case 'SET_DEFAULT':
-      return {
-        ...state,
-        cbbBuzai: action.payload.cbbBuzai || state.cbbBuzai,
-        cbbHenjouShurui:
-          action.payload.cbbHenjouShurui || state.cbbHenjouShurui,
-        cbbHanteKubun: action.payload.cbbHanteKubun || state.cbbHanteKubun,
-        txtaShoken: action.payload.txtaShoken || state.txtaShoken
-      }
     case 'SET_DATA_LIST_M_BUZAI_ZAIRYOU':
       return {
         ...state,
@@ -49,6 +40,11 @@ const reducer = (state, action) => {
           ? action.payload
           : state.dataListMShindan
       }
+    case 'SET_TXTA_SHOKEN':
+      return {
+        ...state,
+        txtaShoken: action.payload
+      }
     default:
       return state
   }
@@ -62,9 +58,6 @@ const PopupSentaku = ({
 }) => {
   // state
   const [state, dispatch] = useReducer(reducer, {
-    cbbBuzai: undefined,
-    cbbHenjouShurui: undefined,
-    cbbHanteKubun: undefined,
     txtaShoken: undefined,
 
     //=======================================
@@ -74,33 +67,11 @@ const PopupSentaku = ({
   })
 
   // constants
-  const {
-    register,
-    handleSubmit,
-    formState: { errors }
-  } = useForm()
+  const refBuzai = useRef()
+  const refShurui = useRef()
+  const refShindan = useRef()
 
   // query - mutation
-  const queryDefault = useQuery({
-    queryString:
-      SQLite.QueryString.MTenkenShokenTemplate.select
-        .CodeBuzaiZairyou_CodeDamageShurui_CodeShindan_Shoken.pure,
-    onSuccess: data => {
-      if (!data.length) {
-        return
-      }
-
-      // dispatch({
-      //   type: 'SET_DEFAULT',
-      //   payload: {
-      //     cbbBuzai: data[0].CODE_BUZAI_ZAIRYOU,
-      //     cbbHenjouShurui: data[0].CODE_DAMAGE_SHURUI,
-      //     cbbHanteKubun: data[0].CODE_SHINDAN,
-      //     txtaShoken: data[0].SHOKEN
-      //   }
-      // })
-    }
-  })
   const queryMBuzaiZairyou = useQuery({
     queryString:
       SQLite.QueryString.MBuzaiZairyou.select.CodeBuzaiZairyou_NameBuzaiZairyou
@@ -125,22 +96,37 @@ const PopupSentaku = ({
     }
   })
 
-  // handles
-  const onSubmit = data => {
-    const { shindan, shoken } = data
+  const mutationShokenTemplate = useMutation({
+    queryString:
+      SQLite.QueryString.MTenkenShokenTemplate.select.Shoken.by
+        .CodeBuzaiZairyou_CodeDamageShurui_CodeShindan.pure,
+    onSuccess: data => {
+      if (!data.length) {
+        dispatch({ type: 'SET_TXTA_SHOKEN', payload: '' })
+      }
 
-    onClickNyuuryoku(
-      shoken +
-        state.dataListMShindan.filter(
-          item => item.CODE_SHINDAN === parseInt(shindan)
-        )[0]?.NAME_SHINDAN
-    )
+      dispatch({ type: 'SET_TXTA_SHOKEN', payload: data[0].SHOKEN })
+    }
+  })
+
+  // handles
+  const onChangeValue = () => {
+    const buzai = refBuzai.current.value
+    const shurui = refShurui.current.value
+    const shindan = refShindan.current.value
+
+    mutationShokenTemplate.execute([buzai, shurui, shindan])
+  }
+  const onSubmit = e => {
+    e.preventDefault()
+
+    onClickNyuuryoku(state.txtaShoken)
     onClickClose()
   }
 
   // effects
   useEffect(() => {
-    !hidden && queryDefault.reExecute()
+    hidden && dispatch({ type: 'SET_TXTA_SHOKEN', payload: '' })
   }, [hidden])
 
   // render
@@ -150,7 +136,7 @@ const PopupSentaku = ({
 
   return (
     <PopupLayout enableScroll={false}>
-      <Container onSubmit={handleSubmit(onSubmit)}>
+      <Container onSubmit={onSubmit}>
         <Styled.ContentCol>
           <ButtonIcon
             icon={closeCircleSharp}
@@ -167,7 +153,8 @@ const PopupSentaku = ({
                 <Styled.Column>
                   <InputSelection
                     data={state.dataListMBuzaiZairyou}
-                    defaultValue={state.cbbBuzai}
+                    ref={refBuzai}
+                    onChange={onChangeValue}
                   />
                 </Styled.Column>
                 <Styled.ColumnTitle>
@@ -177,9 +164,9 @@ const PopupSentaku = ({
                 </Styled.ColumnTitle>
                 <Styled.Column>
                   <InputSelection
-                    {...register('shindan')}
                     data={state.dataListMShindan}
-                    defaultValue={state.cbbHanteKubun}
+                    ref={refShindan}
+                    onChange={onChangeValue}
                   />
                 </Styled.Column>
               </Styled.Row>
@@ -192,7 +179,8 @@ const PopupSentaku = ({
                 <Styled.Column style={{ border: 'none' }}>
                   <InputSelection
                     data={state.dataListMDamageShurui}
-                    defaultValue={state.cbbHenjouShurui}
+                    ref={refShurui}
+                    onChange={onChangeValue}
                   />
                 </Styled.Column>
                 <Styled.Column
@@ -206,7 +194,6 @@ const PopupSentaku = ({
                 </Styled.ColumnTitle>
                 <Styled.Column colSpan={3}>
                   <InputTextArea
-                    {...register('shoken')}
                     defaultValue={state.txtaShoken}
                     rows={8}
                     cols={70}

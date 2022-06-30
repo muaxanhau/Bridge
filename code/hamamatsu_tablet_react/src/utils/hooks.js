@@ -198,26 +198,44 @@ export const useImportCSV = () => {
     readRemoteFile(CSV.Bridge, {
       complete: results => {
         const { data } = results
+        const cData = data.map(item => [
+          ...item.filter((_, index) => index < 21),
+          null // flg_calvert
+        ])
 
-        insertData(SQLite.QueryString.Bridge.insert.fullColumn, data)
+        insertData(SQLite.QueryString.Bridge.insert.fullColumn, cData)
       }
     })
   }
   const importCSVTenkenRireki = () => {
-    readRemoteFile(CSV.TenkenRireki, {
+    readRemoteFile(CSV.Bridge, {
       complete: results => {
         const { data } = results
+        const cData = data.map(item => [
+          ...item.filter(
+            (_, index) => index === 0 || index === 1 || index > 20
+          ),
+          0, // flg_tablet
+          null // bikou
+        ])
 
-        insertData(SQLite.QueryString.TenkenRireki.insert.fullColumn, data)
+        insertData(SQLite.QueryString.TenkenRireki.insert.fullColumn, cData)
       }
     })
   }
   const importCSVTenkenRirekiTemp = () => {
-    readRemoteFile(CSV.TenkenRireki, {
+    readRemoteFile(CSV.Bridge, {
       complete: results => {
         const { data } = results
+        const cData = data.map(item => [
+          ...item.filter(
+            (_, index) => index === 0 || index === 1 || index > 20
+          ),
+          0, // flg_tablet
+          null // bikou
+        ])
 
-        insertData(SQLite.QueryString.TenkenRirekiTemp.insert.fullColumn, data)
+        insertData(SQLite.QueryString.TenkenRirekiTemp.insert.fullColumn, cData)
       }
     })
   }
@@ -270,6 +288,15 @@ export const useImportCSV = () => {
       }
     })
   }
+  const importCSVMBuzaiTenkenhyo = () => {
+    readRemoteFile(CSV.MBuzaiTenkenhyo, {
+      complete: results => {
+        const { data } = results
+
+        insertData(SQLite.QueryString.MBuzaiTenkenhyo.insert.fullColumn, data)
+      }
+    })
+  }
   const importCSVMDamageShurui = () => {
     readRemoteFile(CSV.MDamageShurui, {
       complete: results => {
@@ -303,6 +330,28 @@ export const useImportCSV = () => {
       }
     })
   }
+  const importCSVMGenkyouShurui = () => {
+    readRemoteFile(CSV.MGenkyouShurui, {
+      complete: results => {
+        const { data } = results
+
+        insertData(
+          SQLite.QueryString.MGenkyouShurui.insert.withNoGyoumuAutoIncrement,
+          data
+        )
+      }
+    })
+  }
+  const importCSVTenkenhyouGenkyou = () => {
+    readRemoteFile(CSV.TenkenhyoGenkyou, {
+      complete: results => {
+        const { data } = results
+        const cData = data.map(item => [1, item[0], 0, item[1], item[2], null])
+
+        insertData(SQLite.QueryString.TenkenhyoGenkyou.insert.fullColumn, cData)
+      }
+    })
+  }
 
   const execute = () => {
     importCSVMGyoumu()
@@ -313,9 +362,12 @@ export const useImportCSV = () => {
     importCSVTenkenhyoGazouTemp()
     importCSVMTenkenShokenTemplate()
     importCSVMBuzaiZairyou()
+    importCSVMBuzaiTenkenhyo()
     importCSVMDamageShurui()
     importCSVMDamageShuruiTablet()
     importCSVMTenkenHanrei()
+    importCSVMGenkyouShurui()
+    importCSVTenkenhyouGenkyou()
   }
 
   return { execute }

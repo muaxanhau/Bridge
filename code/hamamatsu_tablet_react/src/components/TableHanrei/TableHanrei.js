@@ -9,39 +9,10 @@ import ButtonType4 from './../ButtonType4/ButtonType4'
 import ButtonIcon from './../ButtonIcon/ButtonIcon'
 import InputCheckBox from './../InputCheckBox/InputCheckBox'
 import { caretDownOutline, chevronUpOutline } from 'ionicons/icons'
+import { reducer } from './reducer'
 
 // constants
 const ICON_SIZE = '30px'
-
-// reducer
-const reducer = (state, action) => {
-  switch (action.type) {
-    case 'MINIMIZE':
-      return {
-        ...state,
-        isMinimize: true
-      }
-    case 'MAXIMIZE':
-      return {
-        ...state,
-        isMinimize: false
-      }
-    case 'TOGGLE_FLG_TABLET':
-      return {
-        ...state,
-        flgTablet: state.flgTablet === 1 ? 0 : 1
-      }
-    case 'SET_DATA_LIST_SHINDAN':
-      return {
-        ...state,
-        dataListShindan: Array.isArray(action.payload)
-          ? action.payload
-          : state.dataListShindan
-      }
-    default:
-      return state
-  }
-}
 
 // main
 const TableHanrei = ({
@@ -94,10 +65,8 @@ const TableHanrei = ({
 
   // effects
   useEffect(() => {
-    setTimeout(() => {
-      handleZenSentaku()
-    }, [1000])
-  }, [state.queryListShindan])
+    state.dataListShindan.length && handleZenSentaku()
+  }, [state.dataListShindan])
   useEffect(() => {
     handleOnChangeHanrei()
   }, [state.flgTablet])

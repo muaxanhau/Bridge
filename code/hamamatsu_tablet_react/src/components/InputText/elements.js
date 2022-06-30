@@ -4,6 +4,12 @@ export const InputC = styled.input`
   outline: none;
   color: var(--color-5);
   ${({ disableBorder }) => disableBorder && `border: none;`}
+  ${({ disabled }) =>
+    disabled &&
+    `
+    background-color: var(--color-2);
+    border: var(--border-1);
+    `}
 
   &:focus {
     box-shadow: ${({ disableBorder }) =>

@@ -6,6 +6,12 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
 `
+const ContainerForm = styled.form`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+`
 const TitleWrapper = styled.div`
   padding: calc(var(--padding-1) / 2);
   background-color: var(--color-7);
@@ -72,6 +78,7 @@ const DateContainer = styled.div`
 
 const Styled = {
   Container,
+  ContainerForm,
   TitleWrapper,
   ContentRow,
   ContentCol,

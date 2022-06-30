@@ -15,7 +15,9 @@ const InputText = React.forwardRef(
   ) => {
     return (
       <InputC
-        placeholder={placeholder || (disableBorder ? 'Aa...' : '')}
+        placeholder={
+          disabled ? '' : placeholder || (disableBorder ? 'Aa...' : '')
+        }
         disabled={disabled}
         ref={ref}
         type={type}

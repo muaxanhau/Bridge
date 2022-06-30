@@ -10,11 +10,13 @@ import {
   TableListBridge
 } from './../../components'
 import { useHistory, useLocation } from 'react-router-dom'
-import { useMapOffline, useQuery } from './../../utils/hooks'
+import { useMapOffline, useMutation, useQuery } from './../../utils/hooks'
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { getIconMaker, convertCoordinateToDecimal } from './../../utils/commons'
 import { Geolocation } from '@awesome-cordova-plugins/geolocation'
+import { groupArrayOfObjects } from './../../utils/commons'
+import { reducer } from './reducer'
 
 // constants
 const DEFAULT_CENTER = [34.853611111111114, 137.82083333333333]
@@ -35,50 +37,13 @@ const MapFly = ({ lat, lng }) => {
   return null
 }
 
-// reducer
-const reducer = (state, action) => {
-  switch (action.type) {
-    case 'SET_HEADER_NAME':
-      return {
-        ...state,
-        headerName: action.payload
-      }
-    case 'SET_DATA_LIST_BRIDGE':
-      return {
-        ...state,
-        dataListBridge: Array.isArray(action.payload)
-          ? action.payload
-          : state.dataListBridge
-      }
-    case 'SET_DATA_LIST_SHINDAN_CHECKED':
-      return {
-        ...state,
-        dataListShindanChecked: Array.isArray(action.payload)
-          ? action.payload
-          : state.dataListShindanChecked
-      }
-    case 'SET_FLG_TABLET':
-      return {
-        ...state,
-        flgTablet: action.payload
-      }
-    case 'SET_LAT_LNG':
-      return {
-        ...state,
-        currentLat: action.payload.currentLat || state.currentLat,
-        currentLng: action.payload.currentLng || state.currentLng
-      }
-    default:
-      return state
-  }
-}
-
 // main
 const TenkenGyoumuMap = () => {
   // state
   const [state, dispatch] = useReducer(reducer, {
     headerName: '',
-    dataListBridge: [],
+    dataListBridgeRoot: [],
+    dataListBridgeFiltered: [],
     dataListShindanChecked: [],
     flgTablet: 1,
     currentLat: undefined,
@@ -104,11 +69,16 @@ const TenkenGyoumuMap = () => {
     queryString:
       SQLite.QueryString.select
         .CodeBridge_BridgeID_NameShisetsu_IdoStartTenken_KeidoStartTenken_FlgCalvert_CodeShindan_NameShindan
-        .by.NoGyoumu,
+        .by.NoGyoumu.pure,
     params: [NO_GYOUMU],
     onSuccess: data => {
-      dispatch({ type: 'SET_DATA_LIST_BRIDGE', payload: data })
+      dispatch({ type: 'SET_DATA_LIST_BRIDGE_ROOT', payload: data })
     }
+  })
+
+  const mutationFlgCalvert = useMutation({
+    queryString:
+      SQLite.QueryString.Bridge.select.FlgCalvert.by.NoGyoumu_BridgeID.pure
   })
 
   // handles
@@ -119,14 +89,10 @@ const TenkenGyoumuMap = () => {
     })
     dispatch({ type: 'SET_FLG_TABLET', payload: flgTablet })
   }
-  const handleOnChangeListBridge = listBridge => {
-    dispatch({
-      type: 'SET_DATA_LIST_BRIDGE',
-      payload: listBridge
-    })
-  }
   const handleOnChangeSelectedBridge = id => {
-    const bridge = state.dataListBridge.filter(item => item.BRIDGE_ID === id)[0]
+    const bridge = state.dataListBridgeRoot.filter(
+      item => item.BRIDGE_ID === id
+    )[0]
 
     dispatch({
       type: 'SET_LAT_LNG',
@@ -143,6 +109,36 @@ const TenkenGyoumuMap = () => {
   }
 
   // effects
+  useEffect(() => {
+    const listBridgeGrouped = groupArrayOfObjects(
+      state.dataListBridgeRoot,
+      'CODE_BRIDGE'
+    )
+    const listBridgeFiltered = Object.keys(listBridgeGrouped).map(key => ({
+      CODE_BRIDGE: key,
+      BRIDGE_ID: key,
+      IDO_START_TENKEN: listBridgeGrouped[key][0]?.IDO_START_TENKEN,
+      KEIDO_START_TENKEN: listBridgeGrouped[key][0]?.KEIDO_START_TENKEN,
+      NAME_SHISETSU: listBridgeGrouped[key][0]?.NAME_SHISETSU,
+      codeShindanFlgTablet0:
+        listBridgeGrouped[key].filter(item => item.FLG_TABLET === 0)[0]
+          ?.CODE_SHINDAN || 0,
+      codeShindanFlgTablet1:
+        listBridgeGrouped[key].filter(item => item.FLG_TABLET === 1)[0]
+          ?.CODE_SHINDAN || 0,
+      nameShindanFlgTablet0:
+        listBridgeGrouped[key].filter(item => item.FLG_TABLET === 0)[0]
+          ?.NAME_SHINDAN || String.sue_tenken,
+      nameShindanFlgTablet1:
+        listBridgeGrouped[key].filter(item => item.FLG_TABLET === 1)[0]
+          ?.NAME_SHINDAN || String.sue_tenken
+    }))
+
+    dispatch({
+      type: 'SET_DATA_LIST_BRIDGE_FILTERED',
+      payload: listBridgeFiltered
+    })
+  }, [state.dataListBridgeRoot])
 
   // render
   return (
@@ -154,10 +150,8 @@ const TenkenGyoumuMap = () => {
       <TableHanrei onChange={handleOnChangeHanrei} />
 
       <TableListBridge
-        data={state.dataListBridge.filter(
-          item => item.FLG_TABLET === parseInt(state.flgTablet)
-        )}
-        onChangeListBridge={handleOnChangeListBridge}
+        data={state.dataListBridgeFiltered}
+        flgTablet={state.flgTablet}
         onChangeSelectedBridge={handleOnChangeSelectedBridge}
       />
       <MapContainer
@@ -169,11 +163,14 @@ const TenkenGyoumuMap = () => {
         <TileLayer url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
         <MapFly lat={state.currentLat} lng={state.currentLng} />
 
-        {state.dataListBridge.map((item, _) => {
-          if (item.FLG_TABLET !== parseInt(state.flgTablet)) {
-            return null
-          }
-          if (!state.dataListShindanChecked.includes(item.CODE_SHINDAN)) {
+        {state.dataListBridgeFiltered.map((item, _) => {
+          if (
+            !state.dataListShindanChecked.includes(
+              state.flgTablet === 0
+                ? item.codeShindanFlgTablet0
+                : item.codeShindanFlgTablet1
+            )
+          ) {
             return null
           }
           return (
@@ -183,13 +180,30 @@ const TenkenGyoumuMap = () => {
                 convertCoordinateToDecimal(item.IDO_START_TENKEN),
                 convertCoordinateToDecimal(item.KEIDO_START_TENKEN)
               ]}
-              icon={getIconMaker(item.CODE_SHINDAN)}
+              icon={getIconMaker(
+                (state.flgTablet === 0
+                  ? item.codeShindanFlgTablet0
+                  : item.codeShindanFlgTablet1
+                ).toString()
+              )}
               eventHandlers={{
                 click: () => {
-                  history.push(NamePages.Shashinchou, {
-                    NO_GYOUMU,
-                    BRIDGE_ID: item.BRIDGE_ID
-                  })
+                  mutationFlgCalvert
+                    .execute([NO_GYOUMU, item.BRIDGE_ID])
+                    .then(data => {
+                      const FlgCalvert = data[0]?.FLG_CALVERT
+                      history.push(
+                        FlgCalvert === null
+                          ? NamePages.ShashinchouWithBarType1
+                          : FlgCalvert === 0
+                          ? NamePages.MenuRouterTypeFlagCalvert1
+                          : NamePages.MenuRouterTypeFlagCalvert2,
+                        {
+                          NO_GYOUMU,
+                          BRIDGE_ID: item.BRIDGE_ID
+                        }
+                      )
+                    })
                 }
               }}
             />

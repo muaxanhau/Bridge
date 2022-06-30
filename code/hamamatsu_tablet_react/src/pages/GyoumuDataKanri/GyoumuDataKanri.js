@@ -10,32 +10,11 @@ import {
   TableGyoumuType2
 } from './../../components'
 import { useQuery } from './../../utils/hooks'
+import { reducer } from './reducer'
 
 // constants
 const BUTTON_ICON_SIZE = '45px'
 const BUTTON_COLOR = 'var(--color-11)'
-
-// reducer
-const reducer = (state, action) => {
-  switch (action.type) {
-    case 'SET_DATA_LIST_GYOUMU_1':
-      return {
-        ...state,
-        dataListGyoumu1: Array.isArray(action.payload)
-          ? action.payload
-          : state.dataListGyoumu1
-      }
-    case 'SET_DATA_LIST_GYOUMU_2':
-      return {
-        ...state,
-        dataListGyoumu2: Array.isArray(action.payload)
-          ? action.payload
-          : state.dataListGyoumu2
-      }
-    default:
-      return state
-  }
-}
 
 // main
 const GyoumuDataKanri = () => {

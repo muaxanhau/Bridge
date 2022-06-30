@@ -23,6 +23,7 @@ const String = {
 
   // ==================================================
   base64RootImage: 'data:image/png;base64,',
+  comma: '、',
   loading: 'Loading',
   login: 'ログイン',
   user: 'ユーザー',
@@ -141,7 +142,8 @@ const String = {
   tsugite: '継手',
   sue_tenken: '末点検',
   hai: ' はい',
-  ie: 'いいえ'
+  ie: 'いいえ',
+  shashin: '写真'
 }
 
 export default String

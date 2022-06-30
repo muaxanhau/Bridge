@@ -36,29 +36,54 @@ export const getDateNowString = () => {
   return today
 }
 export const convertCoordinateToDecimal = (coor = '') => {
-  const d = parseInt(coor.substring(0, coor.lastIndexOf('°')))
-  const min = parseInt(
-    coor.substring(coor.indexOf('°') + 1, coor.lastIndexOf('’'))
-  )
-  const sec = parseInt(
-    coor.substring(coor.indexOf('’') + 1, coor.lastIndexOf('″'))
-  )
+  let coorArr = coor.split('').map(item => item.charCodeAt(0))
 
-  const DD = d + min / 60 + sec / 3600
+  let d = ''
+  let min = ''
+  let sec = ''
+  for (;;) {
+    const ch = coorArr.shift()
+    if (ch < 48 || 57 < ch) {
+      coorArr.shift()
+      break
+    }
+
+    d += (parseInt(ch) - 48).toString()
+  }
+  for (;;) {
+    const ch = coorArr.shift()
+    if (ch < 48 || 57 < ch) {
+      coorArr.shift()
+      break
+    }
+
+    min += (parseInt(ch) - 48).toString()
+  }
+  for (;;) {
+    const ch = coorArr.shift()
+    if ((ch < 48 && ch !== 46) || 57 < ch) {
+      break
+    }
+
+    sec += parseInt(ch) === 46 ? '.' : (parseInt(ch) - 48).toString()
+  }
+
+  const DD = parseInt(d) + parseInt(min) / 60 + parseFloat(sec) / 3600
   return DD
 }
-export const convertDate = (date = '') => {
-  if (date.length !== 8) {
+export const convertDate = (str = '') => {
+  if (typeof str !== 'string' || str.length !== 8) {
     return null
   }
 
-  const yyyy = date.substring(0, 4)
-  const mm = date.substring(4, 6)
-  const dd = date.substring(6, 8)
+  const yyyy = str.substring(0, 4)
+  const mm = str.substring(4, 6)
+  const dd = str.substring(6, 8)
   return yyyy + '-' + mm + '-' + dd
 }
 export const objectToString = (obj = {}) => {
   return Object.values(obj)
+    .map(item => item || '')
     .sort((a, b) => a.toString().localeCompare(b.toString()))
     .toString()
 }
@@ -107,6 +132,16 @@ export const getUUID = () => {
   const dateTime = date + ' ' + time
 
   return dateTime
+}
+export const groupArrayOfObjects = (list, key) => {
+  return list.reduce(function (rv, x) {
+    ;(rv[x[key]] = rv[x[key]] || []).push(x)
+    return rv
+  }, {})
+}
+export const convertObjectToArrayKeyValue = obj => {
+  const tmpObj = { ...obj }
+  return Object.keys(tmpObj).map(key => [key, tmpObj[key]])
 }
 
 // leaflet =============================================================
