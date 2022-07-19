@@ -11,6 +11,7 @@ import 'leaflet.offline'
 import 'leaflet/dist/leaflet.css'
 import { getIconMaker } from '../../utils/commons'
 import { usePapaParse } from 'react-papaparse'
+import { useImportCSV } from './../../utils/hooks'
 
 const Photo = () => {
   const [photos, setPhotos] = useState([])
@@ -111,6 +112,9 @@ const MapOffline = () => {
 }
 const CSVTest = () => {
   const { readRemoteFile } = usePapaParse()
+
+  const { execute } = useImportCSV()
+
   const readFile = () => {
     readRemoteFile(CSV.Bridge, {
       complete: results => {
@@ -143,7 +147,11 @@ const CSVTest = () => {
     readPure()
   }, [])
 
-  return <Styled.Container style={{ backgroundColor: 'violet' }} />
+  return (
+    <Styled.Container style={{ backgroundColor: 'violet' }}>
+      <button onClick={() => execute()}>import CSV</button>
+    </Styled.Container>
+  )
 }
 
 const Test = () => {

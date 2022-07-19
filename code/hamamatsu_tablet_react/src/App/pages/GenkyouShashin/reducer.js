@@ -17,6 +17,24 @@ export const reducer = (state, action) => {
           ? action.payload
           : state.dataListTenkenhyouGenkyou
       }
+    case 'SET_DATA_LIST_NASHI':
+      return {
+        ...state,
+        dataListNashi: Array.isArray(action.payload)
+          ? action.payload
+          : state.dataListNashi
+      }
+    case 'UPDATE_DATA_LIST_NASHI':
+      return {
+        ...state,
+        dataListNashi: [...state.dataListNashi].map(item => ({
+          ...item,
+          isChecked:
+            parseInt(item.CODE_GENKYOU_SHURUI) === parseInt(action.payload.code)
+              ? action.payload.isChecked
+              : item.isChecked
+        }))
+      }
     default:
       return state
   }

@@ -451,8 +451,12 @@ const Table = {
         name: 'CODE_GENKYOU_SHURUI', // PRIMARY KEY
         type: 'INTEGER'
       },
+      GazouID: {
+        name: 'GAZOU_ID',
+        type: 'INTEGER'
+      },
       NameFile: {
-        name: 'NAME_FILE',
+        name: 'NAME_FILE', // PRIMARY KEY
         type: 'VARCHAR(255)'
       },
       FullPath: {
@@ -1051,7 +1055,12 @@ const QueryString = {
           ${Table.BuzaiHyouka.columns.ShindanSochigo.name} ${Table.BuzaiHyouka.columns.ShindanSochigo.type},
           ${Table.BuzaiHyouka.columns.CodeHenjouSochigo.name} ${Table.BuzaiHyouka.columns.CodeHenjouSochigo.type},
           ${Table.BuzaiHyouka.columns.NengappiSaihantei.name} ${Table.BuzaiHyouka.columns.NengappiSaihantei.type},
-          PRIMARY KEY (${Table.BuzaiHyouka.columns.NoGyoumu.name}, ${Table.BuzaiHyouka.columns.BridgeID.name}, ${Table.BuzaiHyouka.columns.FlgTablet.name}, ${Table.BuzaiHyouka.columns.NoBuzai.name})
+          PRIMARY KEY (
+            ${Table.BuzaiHyouka.columns.NoGyoumu.name}, 
+            ${Table.BuzaiHyouka.columns.BridgeID.name}, 
+            ${Table.BuzaiHyouka.columns.FlgTablet.name}, 
+            ${Table.BuzaiHyouka.columns.NoBuzai.name}
+          )
         )
       `
     },
@@ -1701,9 +1710,16 @@ const QueryString = {
           ${Table.TenkenhyoGenkyou.columns.BridgeID.name} ${Table.TenkenhyoGenkyou.columns.BridgeID.type},
           ${Table.TenkenhyoGenkyou.columns.FlgTablet.name} ${Table.TenkenhyoGenkyou.columns.FlgTablet.type},
           ${Table.TenkenhyoGenkyou.columns.CodeGenkyouShurui.name} ${Table.TenkenhyoGenkyou.columns.CodeGenkyouShurui.type},
+          ${Table.TenkenhyoGenkyou.columns.GazouID.name} ${Table.TenkenhyoGenkyou.columns.GazouID.type},
           ${Table.TenkenhyoGenkyou.columns.NameFile.name} ${Table.TenkenhyoGenkyou.columns.NameFile.type},
           ${Table.TenkenhyoGenkyou.columns.FullPath.name} ${Table.TenkenhyoGenkyou.columns.FullPath.type},
-          PRIMARY KEY (${Table.TenkenhyoGenkyou.columns.NoGyoumu.name}, ${Table.TenkenhyoGenkyou.columns.BridgeID.name}, ${Table.TenkenhyoGenkyou.columns.FlgTablet.name}, ${Table.TenkenhyoGenkyou.columns.CodeGenkyouShurui.name})
+          PRIMARY KEY (
+            ${Table.TenkenhyoGenkyou.columns.NoGyoumu.name}, 
+            ${Table.TenkenhyoGenkyou.columns.BridgeID.name}, 
+            ${Table.TenkenhyoGenkyou.columns.FlgTablet.name}, 
+            ${Table.TenkenhyoGenkyou.columns.CodeGenkyouShurui.name},
+            ${Table.TenkenhyoGenkyou.columns.GazouID.name}
+          )
         )
       `
     },
@@ -1726,13 +1742,14 @@ const QueryString = {
       all: {
         pure: ``
       },
-      FlgTablet_CodeGenkyouShurui_NameFile_FullPath: {
+      FlgTablet_CodeGenkyouShurui_GazouID_NameFile_FullPath: {
         by: {
           NoGyoumu_BridgeID: {
             pure: `
-              SELECT 
+              SELECT
                 ${Table.TenkenhyoGenkyou.columns.FlgTablet.name},
                 ${Table.TenkenhyoGenkyou.columns.CodeGenkyouShurui.name},
+                ${Table.TenkenhyoGenkyou.columns.GazouID.name},
                 ${Table.TenkenhyoGenkyou.columns.NameFile.name},
                 ${Table.TenkenhyoGenkyou.columns.FullPath.name}
               FROM 
@@ -1740,6 +1757,32 @@ const QueryString = {
               WHERE 
                 ${Table.TenkenhyoGenkyou.columns.NoGyoumu.name} = ? AND
                 ${Table.TenkenhyoGenkyou.columns.BridgeID.name} = ?
+            `
+          }
+        }
+      }
+    },
+    insert_update: {
+      FullPath: {
+        by: {
+          NoGyoumu_BridgeID_FlgTablet_CodeGenkyouShurui_NameFile: {
+            pure: `
+              INSERT INTO ${Table.TenkenhyoGenkyou.name} (
+                ${Table.TenkenhyoGenkyou.columns.NoGyoumu.name}, 
+                ${Table.TenkenhyoGenkyou.columns.BridgeID.name}, 
+                ${Table.TenkenhyoGenkyou.columns.FlgTablet.name}, 
+                ${Table.TenkenhyoGenkyou.columns.CodeGenkyouShurui.name},
+                ${Table.TenkenhyoGenkyou.columns.NameFile.name},
+                ${Table.TenkenhyoGenkyou.columns.FullPath.name}
+              ) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (
+                ${Table.TenkenhyoGenkyou.columns.NoGyoumu.name}, 
+                ${Table.TenkenhyoGenkyou.columns.BridgeID.name}, 
+                ${Table.TenkenhyoGenkyou.columns.FlgTablet.name}, 
+                ${Table.TenkenhyoGenkyou.columns.CodeGenkyouShurui.name},
+                ${Table.TenkenhyoGenkyou.columns.GazouID.name}
+              ) DO UPDATE SET
+                ${Table.TenkenhyoGenkyou.columns.NameFile.name} = ?,
+                ${Table.TenkenhyoGenkyou.columns.FullPath.name} = ?
             `
           }
         }

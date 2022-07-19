@@ -19,7 +19,7 @@ import '@ionic/react/css/text-transformation.css'
 import '@ionic/react/css/flex-utils.css'
 import '@ionic/react/css/display.css'
 /* Theme variables */
-import './theme/variables.css'
+import './constants/variables.css'
 
 import AppProvider from './globalStates/AppProvider'
 import { setupSQLite } from './utils/commons'
@@ -37,19 +37,34 @@ import {
   ShashinchouWithBarType1,
   Test
 } from './pages'
+import { useSQLiteQuery_createTables } from './../SQLite'
 
 setupIonicReact()
 
-const App = () => {
+const SetupApp2 = () => {
   const { execute } = useImportCSV()
 
   useEffect(async () => {
-    await setupSQLite()
-    execute()
+    setTimeout(async () => {
+      await setupSQLite()
+      execute()
+    }, 5000)
   }, [])
 
+  return null
+}
+
+const SetupApp = () => {
+  // useSQLiteQuery_createTables()
+
+  return <SetupApp2 />
+}
+
+const App = () => {
   return (
     <AppProvider>
+      <SetupApp />
+
       <Loader />
 
       <IonApp>

@@ -1,12 +1,12 @@
-import React, { useState } from 'react'
-import { String, NamePages, SQLite } from '../../constants'
+import React, { useEffect, useState } from 'react'
+import { String, NamePages } from '../../constants'
 import { Form } from './element'
 import { Styled, Title, Text, InputText, ButtonType1 } from './../../components'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { schemaLogin } from './../../utils/validations'
 import { useHistory } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { useMutation } from './../../utils/hooks'
+import { useSQLiteMutation_Login } from './../../../SQLite'
 
 // constants
 const TEXT_ERROR_COLOR = 'var(--color-13)'
@@ -27,15 +27,14 @@ const Login = () => {
   } = useForm({
     resolver: yupResolver(schemaLogin)
   })
+  const [isInvalid, setIsInvalid] = useState(undefined)
 
   // query - mutation
-  const { execute } = useMutation({
-    queryString:
-      SQLite.QueryString.LoginUser.select.LoginID.by.LoginID_Password.pure,
+  const mutationLogin = useSQLiteMutation_Login({
     onSuccess: data => {
-      const isExisted = !!data.length
+      const { isSuccess } = data
 
-      if (isExisted) {
+      if (isSuccess) {
         history.push(NamePages.Menu)
         return
       }
@@ -44,13 +43,9 @@ const Login = () => {
       setIsInvalid(prev => (prev = true))
     }
   })
-  const [isInvalid, setIsInvalid] = useState(undefined)
 
   // handles
-  const onSubmitLogin = data => {
-    const { username, password } = data
-    execute([username, password])
-  }
+  const onSubmitLogin = data => mutationLogin.mutate(data)
 
   // effects
 

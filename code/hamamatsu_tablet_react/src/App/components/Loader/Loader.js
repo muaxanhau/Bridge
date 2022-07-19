@@ -3,6 +3,7 @@ import { String } from './../../constants'
 import { AppContext } from './../../globalStates/AppProvider'
 import { Container, Ring } from './elements'
 import Title from './../Title/Title'
+import { useSQLiteIsRunning } from './../../../SQLite'
 
 // constants
 const TEXT_COLOR = 'var(--color-9)'
@@ -10,8 +11,9 @@ const TEXT_COLOR = 'var(--color-9)'
 // main
 const Loader = () => {
   const { stateLoader } = useContext(AppContext)
+  const isSQLiteRuning = useSQLiteIsRunning()
 
-  if (stateLoader.isLoading === 0) {
+  if (stateLoader.isLoading === 0 && !isSQLiteRuning) {
     return null
   }
 
